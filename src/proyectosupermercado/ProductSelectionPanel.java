@@ -11,12 +11,14 @@ package proyectosupermercado;
 import javax.swing.*;
 import javax.swing.tree.*;
 import java.awt.*;
+import java.util.Enumeration;
 
 /**
- * Panel de selección de productos con estructura jerárquica.
+ * Panel de selección de productos con árbol jerárquico, íconos y buscador.
  */
 public class ProductSelectionPanel extends JPanel {
     private final JTree productTree;
+    private final JTextField txtSearch = new JTextField(15);
     private final JTextArea cartArea;
     private final JLabel lblTotal = new JLabel("Total: $0.00");
     private final JLabel lblDiscount = new JLabel("Descuento: $0.00");
@@ -34,10 +36,11 @@ public class ProductSelectionPanel extends JPanel {
         this.cartManager = cartManager;
         setLayout(new BorderLayout(10, 10));
 
-        // Crear árbol de productos
+        // Construir árbol
         DefaultMutableTreeNode root = ProductTreeBuilder.buildTree(ProductCatalog.getAllProducts());
         productTree = new JTree(root);
         productTree.setRootVisible(false);
+        productTree.setCellRenderer(new ProductTreeCellRenderer()); // usar íconos
         JScrollPane scrollProducts = new JScrollPane(productTree);
 
         cartArea = new JTextArea(12, 30);
@@ -53,16 +56,27 @@ public class ProductSelectionPanel extends JPanel {
         buttons.add(btnCheckout);
         buttons.add(btnBack);
 
+        // Buscador
+        JPanel searchPanel = new JPanel();
+        searchPanel.add(new JLabel("Buscar:"));
+        searchPanel.add(txtSearch);
+        JButton btnSearch = new JButton("🔍");
+        searchPanel.add(btnSearch);
+
+        JPanel top = new JPanel(new BorderLayout());
+        top.add(new JLabel("Seleccione productos por categoría:"), BorderLayout.WEST);
+        top.add(searchPanel, BorderLayout.EAST);
+
         JPanel bottom = new JPanel(new BorderLayout());
         bottom.add(infoPanel, BorderLayout.WEST);
         bottom.add(buttons, BorderLayout.EAST);
 
-        add(new JLabel("Seleccione productos por categoría:"), BorderLayout.NORTH);
+        add(top, BorderLayout.NORTH);
         add(scrollProducts, BorderLayout.CENTER);
         add(scrollCart, BorderLayout.EAST);
         add(bottom, BorderLayout.SOUTH);
 
-        // Acción de agregar
+        // Acción agregar producto
         btnAddToCart.addActionListener(e -> {
             DefaultMutableTreeNode node = (DefaultMutableTreeNode) productTree.getLastSelectedPathComponent();
             if (node == null) return;
@@ -82,7 +96,7 @@ public class ProductSelectionPanel extends JPanel {
             }
         });
 
-        // Finalizar compra
+        // Acción finalizar compra
         btnCheckout.addActionListener(e -> {
             JFrame frame = (JFrame) SwingUtilities.getWindowAncestor(ProductSelectionPanel.this);
             PurchaseManager pm = new PurchaseManager(cartManager);
@@ -95,9 +109,13 @@ public class ProductSelectionPanel extends JPanel {
             frame.repaint();
         });
 
+        // Acción regresar
         btnBack.addActionListener(e -> {
             if (backListener != null) backListener.onBack();
         });
+
+        // Acción buscar
+        btnSearch.addActionListener(e -> searchProduct(txtSearch.getText().trim()));
 
         updateCart();
     }
@@ -110,6 +128,40 @@ public class ProductSelectionPanel extends JPanel {
         cartArea.setText(sb.toString());
         lblDiscount.setText(String.format("Descuento: $%.2f", cartManager.getDiscount()));
         lblTotal.setText(String.format("Total: $%.2f", cartManager.getTotal()));
+    }
+
+    /**
+     * Busca un producto en el árbol y lo selecciona.
+     */
+    private void searchProduct(String query) {
+        if (query.isEmpty()) return;
+        TreeModel model = productTree.getModel();
+        DefaultMutableTreeNode root = (DefaultMutableTreeNode) model.getRoot();
+        DefaultMutableTreeNode found = searchNode(root, query.toLowerCase());
+
+        if (found != null) {
+            TreePath path = new TreePath(found.getPath());
+            productTree.scrollPathToVisible(path);
+            productTree.setSelectionPath(path);
+        } else {
+            JOptionPane.showMessageDialog(this, "Producto no encontrado.", "Buscar", JOptionPane.INFORMATION_MESSAGE);
+        }
+    }
+
+    private DefaultMutableTreeNode searchNode(DefaultMutableTreeNode root, String query) {
+        @SuppressWarnings("unchecked")
+        Enumeration<TreeNode> e = root.depthFirstEnumeration();
+        while (e.hasMoreElements()) {
+            DefaultMutableTreeNode node = (DefaultMutableTreeNode) e.nextElement();
+            Object obj = node.getUserObject();
+            if (obj instanceof Product) {
+                Product p = (Product) obj;
+                if (p.getName().toLowerCase().contains(query)) {
+                    return node;
+                }
+            }
+        }
+        return null;
     }
 }
 
