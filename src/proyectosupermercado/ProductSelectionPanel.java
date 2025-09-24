@@ -9,8 +9,11 @@ package proyectosupermercado;
  * @author pxavi
  */
 import javax.swing.*;
+import javax.swing.border.EmptyBorder;
 import javax.swing.tree.*;
 import java.awt.*;
+import java.awt.event.MouseAdapter;
+import java.awt.event.MouseEvent;
 import java.util.Enumeration;
 
 /**
@@ -32,51 +35,135 @@ public class ProductSelectionPanel extends JPanel {
         void onBack();
     }
 
+    // Colores y fuentes para el diseño
+    private static final Color PRIMARY_COLOR = Color.decode("#72E872");
+    private static final Color SECONDARY_COLOR = Color.decode("#DCC184");
+    private static final Color BUTTON_HOVER_COLOR = Color.decode("#A0D8A0");
+    private static final Font FONT_TITLE = new Font("Cascadia Code", Font.BOLD, 18);
+    private static final Font FONT_TEXT = new Font("Cascadia Code", Font.PLAIN, 16);
+    private static final Font FONT_BUTTON = new Font("Monospaced", Font.BOLD, 14);
+    private static final Font FONT_MONOSPACED = new Font("Monospaced", Font.PLAIN, 12);
+
     public ProductSelectionPanel(CartManager cartManager, BackListener backListener) {
         this.cartManager = cartManager;
-        setLayout(new BorderLayout(10, 10));
+        setLayout(new BorderLayout());
 
-        // Construir árbol
+        // Panel con degradado de fondo
+        JPanel gradientPanel = new JPanel() {
+            @Override
+            protected void paintComponent(Graphics g) {
+                super.paintComponent(g);
+                Graphics2D g2d = (Graphics2D) g;
+                g2d.setRenderingHint(RenderingHints.KEY_RENDERING, RenderingHints.VALUE_RENDER_QUALITY);
+                int w = getWidth();
+                int h = getHeight();
+                Color color1 = PRIMARY_COLOR;
+                Color color2 = SECONDARY_COLOR;
+                GradientPaint gp = new GradientPaint(0, 0, color1, 0, h, color2);
+                g2d.setPaint(gp);
+                g2d.fillRect(0, 0, w, h);
+            }
+        };
+
+        // Panel de contenido principal, transparente
+        JPanel contentPanel = new JPanel(new BorderLayout(15, 15));
+        contentPanel.setOpaque(false);
+        contentPanel.setBorder(new EmptyBorder(25, 25, 25, 25));
+
+        // Título de la sección
+        JLabel headerLabel = new JLabel("Seleccione productos por categoría:");
+        headerLabel.setFont(FONT_TITLE);
+        headerLabel.setForeground(Color.WHITE);
+
+        // Buscador
+        JPanel searchPanel = new JPanel(new FlowLayout(FlowLayout.RIGHT, 5, 0));
+        searchPanel.setOpaque(false);
+        JLabel searchLabel = new JLabel("Buscar:");
+        searchLabel.setFont(FONT_TEXT);
+        searchLabel.setForeground(Color.WHITE);
+        txtSearch.setFont(FONT_TEXT);
+        JButton btnSearch = new JButton("🔍");
+        btnSearch.setFont(FONT_BUTTON);
+        btnSearch.setBackground(Color.WHITE);
+        btnSearch.setForeground(Color.BLACK);
+        btnSearch.setFocusPainted(false);
+        btnSearch.setCursor(new Cursor(Cursor.HAND_CURSOR));
+
+        searchPanel.add(searchLabel);
+        searchPanel.add(txtSearch);
+        searchPanel.add(btnSearch);
+
+        JPanel top = new JPanel(new BorderLayout());
+        top.setOpaque(false);
+        top.add(headerLabel, BorderLayout.WEST);
+        top.add(searchPanel, BorderLayout.EAST);
+
+        // Crear árbol de productos
         DefaultMutableTreeNode root = ProductTreeBuilder.buildTree(ProductCatalog.getAllProducts());
         productTree = new JTree(root);
         productTree.setRootVisible(false);
-        productTree.setCellRenderer(new ProductTreeCellRenderer()); // usar íconos
+        productTree.setCellRenderer(new ProductTreeCellRenderer());
+        productTree.setFont(FONT_TEXT);
+        productTree.setBackground(Color.WHITE);
+        productTree.setOpaque(true);
         JScrollPane scrollProducts = new JScrollPane(productTree);
+        scrollProducts.setOpaque(false);
+        scrollProducts.getViewport().setOpaque(true);
 
+        // Panel lateral derecho para carrito y totales
+        JPanel rightPanel = new JPanel(new BorderLayout(10, 10));
+        rightPanel.setOpaque(false);
+
+        // Área de texto del carrito
         cartArea = new JTextArea(12, 30);
         cartArea.setEditable(false);
+        cartArea.setFont(FONT_MONOSPACED);
+        cartArea.setForeground(Color.BLACK);
+        cartArea.setBackground(Color.WHITE);
+        cartArea.setOpaque(true);
         JScrollPane scrollCart = new JScrollPane(cartArea);
+        scrollCart.setOpaque(false);
+        scrollCart.getViewport().setOpaque(true);
 
-        JPanel infoPanel = new JPanel(new GridLayout(2,1));
+        // Panel para los totales
+        JPanel infoPanel = new JPanel(new GridLayout(2, 1, 5, 5));
+        infoPanel.setOpaque(false);
+        
+        lblDiscount.setFont(FONT_TEXT);
+        lblDiscount.setForeground(Color.WHITE);
+        lblTotal.setFont(FONT_TEXT);
+        lblTotal.setForeground(Color.WHITE);
+        
         infoPanel.add(lblDiscount);
         infoPanel.add(lblTotal);
 
+        rightPanel.add(scrollCart, BorderLayout.CENTER);
+        rightPanel.add(infoPanel, BorderLayout.SOUTH);
+
+        // Panel para los botones
         JPanel buttons = new JPanel();
+        buttons.setOpaque(false);
+        buttons.setLayout(new FlowLayout(FlowLayout.RIGHT, 10, 0));
+        styleButton(btnAddToCart);
+        styleButton(btnCheckout);
+        styleButton(btnBack);
         buttons.add(btnAddToCart);
         buttons.add(btnCheckout);
         buttons.add(btnBack);
 
-        // Buscador
-        JPanel searchPanel = new JPanel();
-        searchPanel.add(new JLabel("Buscar:"));
-        searchPanel.add(txtSearch);
-        JButton btnSearch = new JButton("🔍");
-        searchPanel.add(btnSearch);
+        // Añadiendo todos los componentes al panel de contenido
+        contentPanel.add(top, BorderLayout.NORTH);
+        contentPanel.add(scrollProducts, BorderLayout.CENTER);
+        contentPanel.add(rightPanel, BorderLayout.EAST);
+        contentPanel.add(buttons, BorderLayout.SOUTH);
 
-        JPanel top = new JPanel(new BorderLayout());
-        top.add(new JLabel("Seleccione productos por categoría:"), BorderLayout.WEST);
-        top.add(searchPanel, BorderLayout.EAST);
+        // Agrega el panel de contenido al panel de degradado
+        gradientPanel.add(contentPanel);
 
-        JPanel bottom = new JPanel(new BorderLayout());
-        bottom.add(infoPanel, BorderLayout.WEST);
-        bottom.add(buttons, BorderLayout.EAST);
+        // Agrega el panel de degradado al panel principal
+        add(gradientPanel, BorderLayout.CENTER);
 
-        add(top, BorderLayout.NORTH);
-        add(scrollProducts, BorderLayout.CENTER);
-        add(scrollCart, BorderLayout.EAST);
-        add(bottom, BorderLayout.SOUTH);
-
-        // Acción agregar producto
+        // Acción de agregar producto
         btnAddToCart.addActionListener(e -> {
             DefaultMutableTreeNode node = (DefaultMutableTreeNode) productTree.getLastSelectedPathComponent();
             if (node == null) return;
@@ -121,9 +208,12 @@ public class ProductSelectionPanel extends JPanel {
     }
 
     private void updateCart() {
-        StringBuilder sb = new StringBuilder("🛒 Carrito:\n");
+        StringBuilder sb = new StringBuilder("🛒 Carrito:\n\n");
+        sb.append(String.format("%-25s %s\n", "Descripción", "Precio"));
+        sb.append("--------------------------------\n");
         for (Product p : cartManager.getCart()) {
-            sb.append("- ").append(p.toString()).append("\n");
+            String name = p.getName() + " (" + p.getSize() + ")";
+            sb.append(String.format("%-25s $%.2f\n", name, p.getPrice()));
         }
         cartArea.setText(sb.toString());
         lblDiscount.setText(String.format("Descuento: $%.2f", cartManager.getDiscount()));
@@ -163,5 +253,26 @@ public class ProductSelectionPanel extends JPanel {
         }
         return null;
     }
-}
 
+    // Método para estilizar los botones
+    private void styleButton(JButton button) {
+        button.setFont(FONT_BUTTON);
+        button.setBackground(Color.WHITE);
+        button.setForeground(Color.BLACK);
+        button.setFocusPainted(false);
+        button.setBorder(BorderFactory.createEmptyBorder(10, 25, 10, 25));
+        button.setCursor(new Cursor(Cursor.HAND_CURSOR));
+
+        button.addMouseListener(new MouseAdapter() {
+            @Override
+            public void mouseEntered(MouseEvent evt) {
+                button.setBackground(BUTTON_HOVER_COLOR);
+            }
+
+            @Override
+            public void mouseExited(MouseEvent evt) {
+                button.setBackground(Color.WHITE);
+            }
+        });
+    }
+}

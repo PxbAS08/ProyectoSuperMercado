@@ -9,6 +9,8 @@ package proyectosupermercado;
  * @author pxavi
  */
 import java.util.List;
+import java.util.Map;
+import java.util.stream.Collectors;
 
 /**
  * Gestiona el proceso de compra.
@@ -21,7 +23,7 @@ public class PurchaseManager {
     }
 
     /**
-     * Genera un resumen de la compra.
+     * Genera un resumen de la compra en formato de ticket.
      */
     public String generateSummary() {
         List<Product> items = cartManager.getCart();
@@ -29,13 +31,27 @@ public class PurchaseManager {
             throw new IllegalStateException("El carrito está vacío.");
         }
 
-        StringBuilder sb = new StringBuilder("Resumen de compra:\n");
-        for (Product p : items) {
-            sb.append("- ").append(p.toString()).append("\n");
+        // Agrupar productos por nombre y contar la cantidad de cada uno
+        Map<Product, Long> productCounts = items.stream()
+                .collect(Collectors.groupingBy(product -> product, Collectors.counting()));
+
+        StringBuilder sb = new StringBuilder("Resumen de compra:\n\n");
+        sb.append(String.format("%-4s %-25s %s\n", "Cant.", "Descripción", "Total"));
+        sb.append("------------------------------------------\n");
+
+        for (Map.Entry<Product, Long> entry : productCounts.entrySet()) {
+            Product p = entry.getKey();
+            long quantity = entry.getValue();
+            double itemTotal = p.getPrice() * quantity;
+            sb.append(String.format("%-4d %-25s $%.2f\n", quantity, p.getName() + " (" + p.getSize() + ")", itemTotal));
         }
-        sb.append("\nSubtotal: $").append(String.format("%.2f", cartManager.getTotal() + cartManager.getDiscount()));
-        sb.append("\nDescuento: $").append(String.format("%.2f", cartManager.getDiscount()));
-        sb.append("\nTotal a pagar: $").append(String.format("%.2f", cartManager.getTotal()));
+
+        double subtotal = cartManager.getTotal() + cartManager.getDiscount();
+
+        sb.append("------------------------------------------\n");
+        sb.append(String.format("\nSubtotal: $%.2f", subtotal));
+        sb.append(String.format("\nDescuento: $%.2f", cartManager.getDiscount()));
+        sb.append(String.format("\nTotal a pagar: $%.2f", cartManager.getTotal()));
 
         return sb.toString();
     }
