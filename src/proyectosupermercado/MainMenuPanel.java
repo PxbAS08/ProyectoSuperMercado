@@ -1,5 +1,5 @@
 /*
- * Click nbfs://nbhost/SystemFileSystem/Templates/Licenses/license-o-default.txt to change this license
+ * Click nbfs://nbhost/SystemFileSystem/Templates/Licenses/license-default.txt to change this license
  * Click nbfs://nbhost/SystemFileSystem/Templates/Classes/Class.java to edit this template
  */
 package proyectosupermercado;
@@ -13,12 +13,13 @@ import javax.swing.border.EmptyBorder;
 import java.awt.*;
 import java.awt.event.MouseAdapter;
 import java.awt.event.MouseEvent;
-import javax.swing.border.LineBorder;
 
 public class MainMenuPanel extends JPanel {
     private final JLabel lblWelcome = new JLabel();
+    private final JTextField txtAddress = new JTextField(25); // Nuevo campo para la dirección
     private final JButton btnLogout = new JButton("Cerrar sesión");
     private final JButton btnProducts = new JButton("Seleccionar productos");
+    private final JButton btnPickup = new JButton("Recoger en tienda");
 
     public interface LogoutListener {
         void onLogout();
@@ -26,7 +27,7 @@ public class MainMenuPanel extends JPanel {
 
     // Colores y fuentes
     private static final Color PRIMARY_COLOR = Color.decode("#72E872");
-    private static final Color SECONDARY_COLOR = Color.decode("#DCC184");
+    private static final Color SECONDARY_COLOR = Color.decode("#FFFFFF");
     private static final Color BUTTON_HOVER_COLOR = Color.decode("#A0D8A0");
     private static final Font FONT_TITLE = new Font("Cascadia Code", Font.BOLD, 24);
     private static final Font FONT_TEXT = new Font("Cascadia Code", Font.PLAIN, 16);
@@ -57,66 +58,75 @@ public class MainMenuPanel extends JPanel {
         contentPanel.setOpaque(false);
         contentPanel.setBorder(new EmptyBorder(50, 50, 50, 50));
 
-        // --- INICIO DE CAMBIOS SOLICITADOS ---
+        // Panel superior para la imagen, bienvenida y la dirección
+        JPanel topPanel = new JPanel();
+        topPanel.setOpaque(false);
+        topPanel.setLayout(new BoxLayout(topPanel, BoxLayout.Y_AXIS));
 
-        // 1. Añadiendo una imagen en la parte superior del panel
+        // Agregar la imagen
         try {
             ImageIcon originalIcon = new ImageIcon(getClass().getResource("/recursos/select.png"));
             Image originalImage = originalIcon.getImage();
             Image resizedImage = originalImage.getScaledInstance(128, 128, Image.SCALE_SMOOTH);
             ImageIcon resizedIcon = new ImageIcon(resizedImage);
             JLabel logoLabel = new JLabel(resizedIcon);
-            logoLabel.setHorizontalAlignment(SwingConstants.CENTER);
-            contentPanel.add(logoLabel, BorderLayout.NORTH);
+            logoLabel.setAlignmentX(Component.CENTER_ALIGNMENT);
+            topPanel.add(logoLabel);
         } catch (Exception e) {
             System.err.println("Error al cargar la imagen: " + e.getMessage());
         }
-        
-        // 2. Panel con bordes redondos para la etiqueta de bienvenida
-        JPanel roundedPanel = new JPanel() {
-            @Override
-            protected void paintComponent(Graphics g) {
-                super.paintComponent(g);
-                Graphics2D g2d = (Graphics2D) g;
-                g2d.setRenderingHint(RenderingHints.KEY_ANTIALIASING, RenderingHints.VALUE_ANTIALIAS_ON);
-                g2d.setColor(Color.WHITE); // Color de fondo del panel redondo
-                // Dibuja un rectángulo con bordes redondeados (30x30 es un buen radio)
-                g2d.fillRoundRect(0, 0, getWidth(), getHeight(), 30, 30);
-            }
-        };
-        roundedPanel.setOpaque(false); // Necesario para ver el degradado
-        roundedPanel.setLayout(new FlowLayout(FlowLayout.CENTER, 20, 10)); // Ajuste de espacio
-        
+
+        topPanel.add(Box.createRigidArea(new Dimension(0, 15)));
+
         String user = SessionManager.getInstance().getCurrentUser();
         lblWelcome.setText("Bienvenido, " + user + "!");
-        lblWelcome.setFont(FONT_TEXT); // Usamos un font de texto para que se ajuste mejor
-        lblWelcome.setForeground(Color.BLACK); // Texto negro para el panel blanco
-        lblWelcome.setBorder(new EmptyBorder(5, 15, 5, 15)); // Espacio interno
-        
-        roundedPanel.add(lblWelcome);
-        contentPanel.add(roundedPanel, BorderLayout.CENTER);
-        
-        // 3. Posicionando los botones
-        JPanel buttonsPanel = new JPanel();
-        buttonsPanel.setOpaque(false);
-        buttonsPanel.setLayout(new FlowLayout(FlowLayout.CENTER, 20, 0));
+        lblWelcome.setFont(FONT_TITLE);
+        lblWelcome.setForeground(Color.WHITE);
+        lblWelcome.setAlignmentX(Component.CENTER_ALIGNMENT);
+        topPanel.add(lblWelcome);
+        topPanel.add(Box.createRigidArea(new Dimension(0, 15)));
 
+        JLabel lblAddress = new JLabel("Ingresa tu dirección:");
+        lblAddress.setFont(FONT_TEXT);
+        lblAddress.setForeground(Color.BLACK);
+        lblAddress.setAlignmentX(Component.CENTER_ALIGNMENT);
+        topPanel.add(lblAddress);
+        topPanel.add(Box.createRigidArea(new Dimension(0, 5)));
+
+        txtAddress.setFont(FONT_TEXT);
+        txtAddress.setMaximumSize(new Dimension(400, 30));
+        txtAddress.setAlignmentX(Component.CENTER_ALIGNMENT);
+        topPanel.add(txtAddress);
+
+        contentPanel.add(topPanel, BorderLayout.NORTH);
+
+        // Panel de botones
+        JPanel centerButtons = new JPanel(new FlowLayout(FlowLayout.CENTER, 20, 0));
+        centerButtons.setOpaque(false);
+        
         styleButton(btnProducts);
+        styleButton(btnPickup);
+
+        centerButtons.add(btnProducts);
+        centerButtons.add(btnPickup);
+        
+        contentPanel.add(centerButtons, BorderLayout.CENTER);
+
+        // Panel inferior para el botón de cerrar sesión
+        JPanel logoutPanel = new JPanel(new FlowLayout(FlowLayout.RIGHT, 0, 0));
+        logoutPanel.setOpaque(false);
         styleButton(btnLogout);
+        logoutPanel.add(btnLogout);
+        
+        contentPanel.add(logoutPanel, BorderLayout.SOUTH);
 
-        buttonsPanel.add(btnProducts);
-        buttonsPanel.add(btnLogout);
-
-        contentPanel.add(buttonsPanel, BorderLayout.SOUTH);
-
+        // Agrega el panel de contenido al panel de degradado
         gradientPanel.add(contentPanel);
-        add(gradientPanel, BorderLayout.CENTER);
-        // --- FIN DE CAMBIOS SOLICITADOS ---
 
-        gradientPanel.add(contentPanel);
+        // Agrega el panel de degradado al panel principal
         add(gradientPanel, BorderLayout.CENTER);
 
-        // Agrega las acciones de los botones
+        // Acciones
         btnLogout.addActionListener(e -> {
             SessionManager.getInstance().logout();
             if (logoutListener != null) {
@@ -125,6 +135,26 @@ public class MainMenuPanel extends JPanel {
         });
 
         btnProducts.addActionListener(e -> {
+            String address = txtAddress.getText().trim();
+            if (address.isEmpty()) {
+                JOptionPane.showMessageDialog(this, "Por favor, ingresa una dirección para continuar.", "Error", JOptionPane.ERROR_MESSAGE);
+                return;
+            }
+            SessionManager.getInstance().setUserAddress(address);
+            
+            JFrame frame = (JFrame) SwingUtilities.getWindowAncestor(MainMenuPanel.this);
+            frame.setContentPane(new ProductSelectionPanel(new CartManager(), () -> {
+                frame.setContentPane(new MainMenuPanel(logoutListener));
+                frame.revalidate();
+                frame.repaint();
+            }));
+            frame.revalidate();
+            frame.repaint();
+        });
+
+        btnPickup.addActionListener(e -> {
+            SessionManager.getInstance().setUserAddress("Recoger en tienda");
+
             JFrame frame = (JFrame) SwingUtilities.getWindowAncestor(MainMenuPanel.this);
             frame.setContentPane(new ProductSelectionPanel(new CartManager(), () -> {
                 frame.setContentPane(new MainMenuPanel(logoutListener));

@@ -60,10 +60,10 @@ public class FileAuthenticationService implements AuthenticationService, Seriali
     @Override
     public boolean register(String username, char[] password) throws IOException {
         synchronized (lock) {
-            if (users.containsKey(username)) return false;
+            if (users.containsKey(username.toLowerCase())) return false;
             try {
                 String hashed = hashPassword(password);
-                users.put(username, hashed);
+                users.put(username.toLowerCase(), hashed);
                 saveToFile();
                 return true;
             } catch (Exception e) {
@@ -75,7 +75,7 @@ public class FileAuthenticationService implements AuthenticationService, Seriali
     @Override
     public boolean login(String username, char[] password) throws IOException {
         synchronized (lock) {
-            String stored = users.get(username);
+            String stored = users.get(username.toLowerCase()); // Convertir a minúsculas
             if (stored == null) return false;
             try {
                 String hashed = hashPassword(password);
@@ -86,4 +86,3 @@ public class FileAuthenticationService implements AuthenticationService, Seriali
         }
     }
 }
-

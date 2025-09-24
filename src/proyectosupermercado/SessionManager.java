@@ -11,6 +11,7 @@ package proyectosupermercado;
 public class SessionManager {
     private static SessionManager instance;
     private String currentUser;
+    private String userAddress; // Nuevo campo para la dirección
 
     private SessionManager() {}
 
@@ -23,10 +24,12 @@ public class SessionManager {
 
     public void login(String username) {
         this.currentUser = username;
+        this.userAddress = null; // Limpiar dirección al iniciar sesión
     }
 
     public void logout() {
         this.currentUser = null;
+        this.userAddress = null; // Limpiar dirección al cerrar sesión
     }
 
     public boolean isLoggedIn() {
@@ -35,6 +38,15 @@ public class SessionManager {
 
     public String getCurrentUser() {
         return currentUser;
+    }
+    
+    // Métodos para la dirección
+    public void setUserAddress(String address) {
+        this.userAddress = address;
+    }
+    
+    public String getUserAddress() {
+        return userAddress;
     }
 }
 

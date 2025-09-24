@@ -26,6 +26,15 @@ public class CartManager {
             cart.add(product);
         }
     }
+    
+    public void removeProduct(Product product) {
+        synchronized (cart) {
+            if (cart.remove(product)) {
+                calculateTotal();
+            }
+        }
+    }
+
 
     public List<Product> getCart() {
         synchronized (cart) {

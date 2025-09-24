@@ -58,7 +58,7 @@ public class PurchasePanel extends JPanel {
         contentPanel.setBorder(new EmptyBorder(25, 25, 25, 25));
 
         // Título de la sección
-        JLabel headerLabel = new JLabel("Resumen de la Compra");
+        JLabel headerLabel = new JLabel("SuperMercado ONIX - Resumen de la Compra");
         headerLabel.setFont(FONT_TITLE);
         headerLabel.setForeground(Color.WHITE);
         headerLabel.setHorizontalAlignment(SwingConstants.CENTER);
@@ -72,9 +72,11 @@ public class PurchasePanel extends JPanel {
         JScrollPane scrollSummary = new JScrollPane(txtSummary);
         scrollSummary.setOpaque(false);
         scrollSummary.getViewport().setOpaque(true);
-
+        
         try {
             txtSummary.setText(purchaseManager.generateSummary());
+            // Centrar el texto en el JTextArea es complicado, se puede simular con un diseño
+            txtSummary.setCaretPosition(0); // Vuelve al inicio del texto
         } catch (Exception e) {
             txtSummary.setText("No hay productos en el carrito.\n" + e.getMessage());
         }
@@ -92,7 +94,7 @@ public class PurchasePanel extends JPanel {
         JPanel imagePanel = new JPanel();
         imagePanel.setOpaque(false);
         try {
-            ImageIcon originalIcon = new ImageIcon(getClass().getResource("/recursos/gracias.png"));
+            ImageIcon originalIcon = new ImageIcon(getClass().getResource("/proyectosupermercado/recursos/logo.png"));
             Image originalImage = originalIcon.getImage();
             Image resizedImage = originalImage.getScaledInstance(128, 128, Image.SCALE_SMOOTH);
             ImageIcon resizedIcon = new ImageIcon(resizedImage);
@@ -103,16 +105,25 @@ public class PurchasePanel extends JPanel {
             System.err.println("Error al cargar la imagen: " + e.getMessage());
         }
 
-
         // Panel inferior que contiene los botones y la imagen
         JPanel southPanel = new JPanel(new BorderLayout());
         southPanel.setOpaque(false);
         southPanel.add(buttons, BorderLayout.NORTH);
         southPanel.add(imagePanel, BorderLayout.SOUTH);
 
+        // Panel para el JScrollPane con el texto del ticket y centrando el texto
+        JPanel centerPanel = new JPanel(new GridBagLayout());
+        centerPanel.setOpaque(false);
+        GridBagConstraints gbc = new GridBagConstraints();
+        gbc.fill = GridBagConstraints.BOTH;
+        gbc.weightx = 1.0;
+        gbc.weighty = 1.0;
+        centerPanel.add(scrollSummary, gbc);
+
+
         // Añadiendo los componentes al panel de contenido
         contentPanel.add(headerLabel, BorderLayout.NORTH);
-        contentPanel.add(scrollSummary, BorderLayout.CENTER);
+        contentPanel.add(centerPanel, BorderLayout.CENTER);
         contentPanel.add(southPanel, BorderLayout.SOUTH);
 
         // Agrega el panel de contenido al panel de degradado

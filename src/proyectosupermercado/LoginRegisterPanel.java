@@ -13,7 +13,6 @@ import javax.swing.border.EmptyBorder;
 import java.awt.*;
 import java.awt.event.ActionEvent;
 import java.awt.event.MouseAdapter;
-import java.awt.event.MouseEvent;
 
 public class LoginRegisterPanel extends JPanel {
     private final JTextField txtUsername = new JTextField(18);
@@ -27,18 +26,19 @@ public class LoginRegisterPanel extends JPanel {
     private final AuthenticationService authService = new FileAuthenticationService();
 
     // Colores y fuentes
-    private static final Color PRIMARY_COLOR = Color.decode("#72E872"); // Verde del degradado
-    private static final Color SECONDARY_COLOR = Color.decode("#DCC184"); // Color del degradado
+    private static final Color PRIMARY_COLOR = Color.decode("#72E872");
+    private static final Color SECONDARY_COLOR = Color.decode("#FFFFFF");
     private static final Color BUTTON_HOVER_COLOR = Color.decode("#A0D8A0");
-    private static final Font FONT_TITLE = new Font("Impact", Font.BOLD, 24);
+    private static final Color ERROR_COLOR = Color.decode("#e74c3c"); // Rojo para errores
+    private static final Font FONT_TITLE = new Font("Cascadia Code", Font.BOLD, 24);
     private static final Font FONT_TEXT = new Font("Cascadia Code", Font.PLAIN, 14);
     private static final Font FONT_BUTTON = new Font("Cascadia Code", Font.BOLD, 14);
 
+
     public LoginRegisterPanel() {
-        // Establece el diseño para el panel principal
         setLayout(new BorderLayout());
 
-        // Se crea el panel para el degradado de fondo
+        // Panel con degradado de fondo
         JPanel gradientPanel = new JPanel() {
             @Override
             protected void paintComponent(Graphics g) {
@@ -54,10 +54,10 @@ public class LoginRegisterPanel extends JPanel {
                 g2d.fillRect(0, 0, w, h);
             }
         };
-        
-        // El contenido del panel se agrega a un panel secundario
+
+        // Panel de contenido principal, transparente
         JPanel contentPanel = new JPanel(new BorderLayout(20, 20));
-        contentPanel.setOpaque(false); // Hace el panel transparente para ver el degradado
+        contentPanel.setOpaque(false);
         contentPanel.setBorder(new EmptyBorder(40, 40, 40, 40));
 
         // Panel para el logo e imagen
@@ -65,7 +65,6 @@ public class LoginRegisterPanel extends JPanel {
         headerPanel.setLayout(new BoxLayout(headerPanel, BoxLayout.Y_AXIS));
         headerPanel.setOpaque(false);
 
-        // Agregando la imagen del logo
         try {
             ImageIcon originalIcon = new ImageIcon(getClass().getResource("/recursos/logo.png"));
             Image originalImage = originalIcon.getImage();
@@ -78,10 +77,9 @@ public class LoginRegisterPanel extends JPanel {
             System.err.println("Error al cargar la imagen: " + e.getMessage());
         }
 
-        // Título estilizado
         JLabel titleLabel = new JLabel("SuperMercado ONIX");
         titleLabel.setFont(FONT_TITLE);
-        titleLabel.setForeground(Color.WHITE); // Cambiado a blanco para mejor contraste
+        titleLabel.setForeground(Color.BLACK);
         titleLabel.setAlignmentX(Component.CENTER_ALIGNMENT);
         headerPanel.add(Box.createRigidArea(new Dimension(0, 10)));
         headerPanel.add(titleLabel);
@@ -96,7 +94,7 @@ public class LoginRegisterPanel extends JPanel {
 
         JLabel userLabel = new JLabel("Usuario:");
         userLabel.setFont(FONT_TEXT);
-        userLabel.setForeground(Color.WHITE);
+        userLabel.setForeground(Color.BLACK);
         c.gridx = 0; c.gridy = 0; form.add(userLabel, c);
         
         txtUsername.setFont(FONT_TEXT);
@@ -104,14 +102,11 @@ public class LoginRegisterPanel extends JPanel {
 
         JLabel passwordLabel = new JLabel("Contraseña:");
         passwordLabel.setFont(FONT_TEXT);
-        passwordLabel.setForeground(Color.WHITE);
+        passwordLabel.setForeground(Color.BLACK);
         c.gridx = 0; c.gridy = 1; form.add(passwordLabel, c);
 
         txtPassword.setFont(FONT_TEXT);
         c.gridx = 1; c.gridy = 1; form.add(txtPassword, c);
-
-        JPanel south = new JPanel(new BorderLayout(5, 5));
-        south.setOpaque(false);
 
         JPanel botones = new JPanel();
         botones.setOpaque(false);
@@ -120,8 +115,10 @@ public class LoginRegisterPanel extends JPanel {
         styleButton(btnRegister);
         botones.add(btnLogin);
         botones.add(btnRegister);
-        south.add(botones, BorderLayout.NORTH);
 
+        JPanel south = new JPanel(new BorderLayout(5,5));
+        south.setOpaque(false);
+        south.add(botones, BorderLayout.NORTH);
         south.add(progressBar, BorderLayout.CENTER);
         
         lblStatus.setFont(FONT_TEXT);
@@ -136,13 +133,9 @@ public class LoginRegisterPanel extends JPanel {
         progressBar.setValue(0);
         progressBar.setBorderPainted(false);
         progressBar.setForeground(Color.WHITE);
-        progressBar.setBackground(new Color(255, 255, 255, 128)); // Semi-transparente
-        progressBar.setOpaque(false);
+        progressBar.setBackground(new Color(255, 255, 255, 128));
 
-        // Agrega el panel de contenido al panel de degradado
         gradientPanel.add(contentPanel);
-
-        // Agrega el panel de degradado al panel principal
         add(gradientPanel, BorderLayout.CENTER);
 
         // Acciones
@@ -150,28 +143,6 @@ public class LoginRegisterPanel extends JPanel {
         btnRegister.addActionListener(this::onRegister);
     }
     
-    // Método para estilizar los botones
-    private void styleButton(JButton button) {
-        button.setFont(FONT_BUTTON);
-        button.setBackground(Color.WHITE);
-        button.setForeground(Color.BLACK); // Cambiado a negro como solicitaste
-        button.setFocusPainted(false);
-        button.setBorder(BorderFactory.createEmptyBorder(10, 25, 10, 25));
-        button.setCursor(new Cursor(Cursor.HAND_CURSOR));
-        
-        button.addMouseListener(new MouseAdapter() {
-            @Override
-            public void mouseEntered(MouseEvent evt) {
-                button.setBackground(BUTTON_HOVER_COLOR);
-            }
-
-            @Override
-            public void mouseExited(MouseEvent evt) {
-                button.setBackground(Color.WHITE);
-            }
-        });
-    }
-
     private void setProcessing(boolean processing) {
         btnLogin.setEnabled(!processing);
         btnRegister.setEnabled(!processing);
@@ -185,10 +156,14 @@ public class LoginRegisterPanel extends JPanel {
         String user = txtUsername.getText().trim();
         char[] pass = txtPassword.getPassword();
 
-        if (!validateInputs(user, pass)) return;
+        if (!validateInputs(user, pass)) {
+            lblStatus.setForeground(ERROR_COLOR);
+            return;
+        }
 
         setProcessing(true);
         lblStatus.setText("Iniciando sesión...");
+        lblStatus.setForeground(Color.BLACK);
         AuthThread authTask = new AuthThread(authService, user, pass, AuthThread.Action.LOGIN, new AuthListener() {
             @Override
             public void onAuthProgress(int percent) {
@@ -202,6 +177,7 @@ public class LoginRegisterPanel extends JPanel {
             public void onAuthSuccess(String message, boolean isRegister) {
                 SwingUtilities.invokeLater(() -> {
                     lblStatus.setText(message);
+                    lblStatus.setForeground(Color.WHITE);
                     setProcessing(false);
                     if (!isRegister) {
                         SessionManager.getInstance().login(user);
@@ -224,6 +200,7 @@ public class LoginRegisterPanel extends JPanel {
             public void onAuthFailure(String message) {
                 SwingUtilities.invokeLater(() -> {
                     lblStatus.setText(message);
+                    lblStatus.setForeground(ERROR_COLOR);
                     setProcessing(false);
                 });
             }
@@ -235,10 +212,14 @@ public class LoginRegisterPanel extends JPanel {
         String user = txtUsername.getText().trim();
         char[] pass = txtPassword.getPassword();
 
-        if (!validateInputs(user, pass)) return;
+        if (!validateInputs(user, pass)) {
+            lblStatus.setForeground(ERROR_COLOR);
+            return;
+        }
 
         setProcessing(true);
         lblStatus.setText("Registrando usuario...");
+        lblStatus.setForeground(Color.BLACK);
         AuthThread authTask = new AuthThread(authService, user, pass, AuthThread.Action.REGISTER, new AuthListener() {
             @Override
             public void onAuthProgress(int percent) {
@@ -252,6 +233,7 @@ public class LoginRegisterPanel extends JPanel {
             public void onAuthSuccess(String message, boolean isRegister) {
                 SwingUtilities.invokeLater(() -> {
                     lblStatus.setText(message);
+                    lblStatus.setForeground(Color.WHITE);
                     setProcessing(false);
                     txtPassword.setText("");
                 });
@@ -261,6 +243,7 @@ public class LoginRegisterPanel extends JPanel {
             public void onAuthFailure(String message) {
                 SwingUtilities.invokeLater(() -> {
                     lblStatus.setText(message);
+                    lblStatus.setForeground(ERROR_COLOR);
                     setProcessing(false);
                 });
             }
@@ -278,5 +261,24 @@ public class LoginRegisterPanel extends JPanel {
             return false;
         }
         return true;
+    }
+
+    private void styleButton(JButton button) {
+        button.setFont(FONT_BUTTON);
+        button.setBackground(Color.WHITE);
+        button.setForeground(Color.BLACK);
+        button.setFocusPainted(false);
+        button.setBorder(BorderFactory.createEmptyBorder(10, 25, 10, 25));
+        button.setCursor(new Cursor(Cursor.HAND_CURSOR));
+        
+        button.addMouseListener(new MouseAdapter() {
+            public void mouseEntered(java.awt.event.MouseEvent evt) {
+                button.setBackground(BUTTON_HOVER_COLOR);
+            }
+
+            public void mouseExited(java.awt.event.MouseEvent evt) {
+                button.setBackground(Color.WHITE);
+            }
+        });
     }
 }

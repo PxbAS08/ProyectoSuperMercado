@@ -28,6 +28,7 @@ public class ProductSelectionPanel extends JPanel {
     private final JButton btnAddToCart = new JButton("Agregar al carrito");
     private final JButton btnCheckout = new JButton("Finalizar compra");
     private final JButton btnBack = new JButton("Regresar al menú");
+    private final JButton btnClearCart = new JButton("Borrar"); // Nuevo botón para borrar el carrito
 
     private final CartManager cartManager;
 
@@ -37,10 +38,10 @@ public class ProductSelectionPanel extends JPanel {
 
     // Colores y fuentes para el diseño
     private static final Color PRIMARY_COLOR = Color.decode("#72E872");
-    private static final Color SECONDARY_COLOR = Color.decode("#DCC184");
+    private static final Color SECONDARY_COLOR = Color.decode("#FFFFFF");
     private static final Color BUTTON_HOVER_COLOR = Color.decode("#A0D8A0");
     private static final Font FONT_TITLE = new Font("Cascadia Code", Font.BOLD, 18);
-    private static final Font FONT_TEXT = new Font("Cascadia Code", Font.PLAIN, 16);
+    private static final Font FONT_TEXT = new Font("Cascadia Code", Font.PLAIN, 14);
     private static final Font FONT_BUTTON = new Font("Monospaced", Font.BOLD, 14);
     private static final Font FONT_MONOSPACED = new Font("Monospaced", Font.PLAIN, 12);
 
@@ -70,17 +71,41 @@ public class ProductSelectionPanel extends JPanel {
         contentPanel.setOpaque(false);
         contentPanel.setBorder(new EmptyBorder(25, 25, 25, 25));
 
-        // Título de la sección
-        JLabel headerLabel = new JLabel("Seleccione productos por categoría:");
-        headerLabel.setFont(FONT_TITLE);
-        headerLabel.setForeground(Color.WHITE);
+        // Panel superior para el logo y el titulo principal
+        JPanel mainHeaderPanel = new JPanel(new BorderLayout());
+        mainHeaderPanel.setOpaque(false);
+        JLabel mainTitleLabel = new JLabel("SuperMercado ONIX");
+        mainTitleLabel.setFont(new Font("Cascadia Code", Font.BOLD, 24));
+        mainTitleLabel.setForeground(Color.WHITE);
+        mainTitleLabel.setHorizontalAlignment(SwingConstants.CENTER);
+        
+        // Agregar la imagen del logo en la esquina superior izquierda
+        JPanel logoPanel = new JPanel(new FlowLayout(FlowLayout.LEFT, 0, 0));
+        logoPanel.setOpaque(false);
+        try {
+            ImageIcon originalIcon = new ImageIcon(getClass().getResource("/recursos/logo.png"));
+            Image originalImage = originalIcon.getImage();
+            Image resizedImage = originalImage.getScaledInstance(64, 64, Image.SCALE_SMOOTH);
+            ImageIcon resizedIcon = new ImageIcon(resizedImage);
+            JLabel logoLabel = new JLabel(resizedIcon);
+            logoPanel.add(logoLabel);
+        } catch (Exception e) {
+            System.err.println("Error al cargar la imagen: " + e.getMessage());
+        }
+        
+        mainHeaderPanel.add(mainTitleLabel, BorderLayout.CENTER);
+        mainHeaderPanel.add(logoPanel, BorderLayout.WEST);
 
-        // Buscador
+        // Título de la sección y buscador
+        JLabel headerLabel = new JLabel("PRODUCTOS:");
+        headerLabel.setFont(FONT_TITLE);
+        headerLabel.setForeground(Color.BLACK);
+
         JPanel searchPanel = new JPanel(new FlowLayout(FlowLayout.RIGHT, 5, 0));
         searchPanel.setOpaque(false);
         JLabel searchLabel = new JLabel("Buscar:");
         searchLabel.setFont(FONT_TEXT);
-        searchLabel.setForeground(Color.WHITE);
+        searchLabel.setForeground(Color.BLACK);
         txtSearch.setFont(FONT_TEXT);
         JButton btnSearch = new JButton("🔍");
         btnSearch.setFont(FONT_BUTTON);
@@ -98,6 +123,12 @@ public class ProductSelectionPanel extends JPanel {
         top.add(headerLabel, BorderLayout.WEST);
         top.add(searchPanel, BorderLayout.EAST);
 
+        // Crear un panel para agrupar el encabezado principal y el secundario
+        JPanel fullTopPanel = new JPanel(new BorderLayout());
+        fullTopPanel.setOpaque(false);
+        fullTopPanel.add(mainHeaderPanel, BorderLayout.NORTH);
+        fullTopPanel.add(top, BorderLayout.CENTER);
+        
         // Crear árbol de productos
         DefaultMutableTreeNode root = ProductTreeBuilder.buildTree(ProductCatalog.getAllProducts());
         productTree = new JTree(root);
@@ -114,8 +145,24 @@ public class ProductSelectionPanel extends JPanel {
         JPanel rightPanel = new JPanel(new BorderLayout(10, 10));
         rightPanel.setOpaque(false);
 
-        // Área de texto del carrito
-        cartArea = new JTextArea(12, 30);
+        //Header del carrito con el nuevo botón
+        JPanel cartHeader = new JPanel(new BorderLayout());
+        cartHeader.setOpaque(false);
+        JLabel cartLabel = new JLabel(" ");
+        cartLabel.setFont(FONT_TEXT);
+        cartLabel.setForeground(Color.WHITE);
+        
+        btnClearCart.setPreferredSize(new Dimension(50, 25)); // Tamaño pequeño
+        btnClearCart.setBackground(Color.decode("#e74c3c")); // Color de alerta
+        btnClearCart.setForeground(Color.BLACK);
+        btnClearCart.setBorder(BorderFactory.createEmptyBorder());
+        btnClearCart.setCursor(new Cursor(Cursor.HAND_CURSOR));
+
+        cartHeader.add(cartLabel, BorderLayout.WEST);
+        cartHeader.add(btnClearCart, BorderLayout.EAST);
+        
+        // Área de texto del carrito (ahora más ancho)
+        cartArea = new JTextArea(12, 32); // Incremento de ancho (de 30 a 40)
         cartArea.setEditable(false);
         cartArea.setFont(FONT_MONOSPACED);
         cartArea.setForeground(Color.BLACK);
@@ -130,15 +177,22 @@ public class ProductSelectionPanel extends JPanel {
         infoPanel.setOpaque(false);
         
         lblDiscount.setFont(FONT_TEXT);
-        lblDiscount.setForeground(Color.WHITE);
+        lblDiscount.setForeground(Color.BLACK);
         lblTotal.setFont(FONT_TEXT);
-        lblTotal.setForeground(Color.WHITE);
+        lblTotal.setForeground(Color.RED);
         
         infoPanel.add(lblDiscount);
         infoPanel.add(lblTotal);
+        
+        // Panel que agrupa el header del carrito, el área de texto y los totales
+        JPanel fullCartPanel = new JPanel(new BorderLayout(5,5));
+        fullCartPanel.setOpaque(false);
+        fullCartPanel.add(cartHeader, BorderLayout.NORTH);
+        fullCartPanel.add(scrollCart, BorderLayout.CENTER);
+        fullCartPanel.add(infoPanel, BorderLayout.SOUTH);
 
-        rightPanel.add(scrollCart, BorderLayout.CENTER);
-        rightPanel.add(infoPanel, BorderLayout.SOUTH);
+        rightPanel.add(fullCartPanel, BorderLayout.CENTER);
+
 
         // Panel para los botones
         JPanel buttons = new JPanel();
@@ -152,7 +206,7 @@ public class ProductSelectionPanel extends JPanel {
         buttons.add(btnBack);
 
         // Añadiendo todos los componentes al panel de contenido
-        contentPanel.add(top, BorderLayout.NORTH);
+        contentPanel.add(fullTopPanel, BorderLayout.NORTH);
         contentPanel.add(scrollProducts, BorderLayout.CENTER);
         contentPanel.add(rightPanel, BorderLayout.EAST);
         contentPanel.add(buttons, BorderLayout.SOUTH);
@@ -182,6 +236,12 @@ public class ProductSelectionPanel extends JPanel {
                 }).start();
             }
         });
+        
+        // Acción del nuevo botón de borrar carrito
+        btnClearCart.addActionListener(e -> {
+            cartManager.clearCart();
+            updateCart();
+        });
 
         // Acción finalizar compra
         btnCheckout.addActionListener(e -> {
@@ -208,6 +268,7 @@ public class ProductSelectionPanel extends JPanel {
     }
 
     private void updateCart() {
+        // Se usará una cadena con formato para alinear las columnas
         StringBuilder sb = new StringBuilder("🛒 Carrito:\n\n");
         sb.append(String.format("%-25s %s\n", "Descripción", "Precio"));
         sb.append("--------------------------------\n");
