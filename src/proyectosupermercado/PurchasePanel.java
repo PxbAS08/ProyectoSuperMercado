@@ -94,7 +94,7 @@ public class PurchasePanel extends JPanel {
         JPanel imagePanel = new JPanel();
         imagePanel.setOpaque(false);
         try {
-            ImageIcon originalIcon = new ImageIcon(getClass().getResource("/proyectosupermercado/recursos/logo.png"));
+            ImageIcon originalIcon = new ImageIcon(getClass().getResource("/recursos/gracias.png"));
             Image originalImage = originalIcon.getImage();
             Image resizedImage = originalImage.getScaledInstance(128, 128, Image.SCALE_SMOOTH);
             ImageIcon resizedIcon = new ImageIcon(resizedImage);

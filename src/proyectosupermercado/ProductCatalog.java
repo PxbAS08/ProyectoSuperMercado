@@ -8,13 +8,15 @@ package proyectosupermercado;
  *
  * @author pxavi
  */
-import java.util.ArrayList;
-import java.util.List;
+import java.util.ArrayList; // Importa la clase ArrayList para crear listas dinámicas.
+import java.util.List; // Importa la interfaz List.
 
-public class ProductCatalog {
+public class ProductCatalog { // Declaración de la clase pública 'ProductCatalog'.
+    // Declara una lista estática y final de productos. 'static' significa que es compartida por todas las instancias de la clase.
     private static final List<Product> products = new ArrayList<>();
 
-    static {
+    static { // Bloque estático que se ejecuta una sola vez cuando la clase es cargada en memoria.
+        // Aquí se crean y añaden todos los productos al catálogo.
         // Leche
         products.add(new Product("L1", "Lala", "Leche", "Entera", "1L", 28.50));
         products.add(new Product("L2", "Santa Clara", "Leche", "Entera", "1L (6 piezas)", 230.00));
@@ -44,14 +46,14 @@ public class ProductCatalog {
         products.add(new Product("M1", "Lala sin sal", "Mantequilla y Margarina", "Mantequilla", "90g", 24.00));
         products.add(new Product("M2", "Primavera", "Mantequilla y Margarina", "Margarina", "225g", 18.00));
 
-        // 🍪 Snacks – Galletas
+        // Snacks – Galletas
         products.add(new Product("S1", "Marinela Canelitas", "Snacks", "Galletas", "300g", 37.90));
         products.add(new Product("S2", "Chokiees", "Snacks", "Galletas", "300g", 107.00));
         products.add(new Product("S3", "Sponch", "Snacks", "Galletas", "700g (4 paquetes)", 79.50));
         products.add(new Product("S4", "Pasticetas", "Snacks", "Galletas", "400g", 65.90));
         products.add(new Product("S5", "Surtido Marinela", "Snacks", "Galletas", "450g", 73.50));
 
-        // 🍟 Snacks – Botanas
+        // Snacks – Botanas
         products.add(new Product("S6", "Sabritas Clasicas", "Snacks", "Botanas", "45g", 20.00));
         products.add(new Product("S6", "Sabritas Flaming Hot", "Snacks", "Botanas", "45g", 20.00));
         products.add(new Product("S6", "Sabritas Adobadas", "Snacks", "Botanas", "45g", 20.00));
@@ -62,13 +64,13 @@ public class ProductCatalog {
         products.add(new Product("S9", "Cheetos Flaming Hot", "Snacks", "Botanas", "80g", 15.00));
         products.add(new Product("S10", "Cacahuates Japoneses", "Snacks", "Botanas", "70g", 20.00));
 
-        // 🍰 Snacks – Pastelitos
+        // Snacks – Pastelitos
         products.add(new Product("S11", "Gansito Marinela", "Snacks", "Pastelitos", "50g", 20.90));
         products.add(new Product("S12", "Pingüinos Marinela", "Snacks", "Pastelitos", "80g", 27.90));
         products.add(new Product("S13", "Choco Roles Marinela", "Snacks", "Pastelitos", "122g (2 piezas)", 27.90));
         products.add(new Product("S14", "Gansito Marinela 3 Piezas", "Snacks", "Pastelitos", "Paquete", 50.90));
 
-        // 🧴 Productos de Limpieza
+        // Productos de Limpieza
         products.add(new Product("PL1", "Pinol El Original", "Productos de Limpieza", "Multiusos", "5.1L", 179.00));
         products.add(new Product("PL2", "Fabuloso", "Productos de Limpieza", "Multiusos", "6L", 199.00));
         products.add(new Product("PL3", "Cloralex", "Productos de Limpieza", "Cloro", "1L", 68.00));
@@ -96,7 +98,9 @@ public class ProductCatalog {
         products.add(new Product("B5", "Jugo Del Valle Naranja", "Bebidas", "Jugo", "1L tetrapack", 28.00));
     }
 
+    // Método público y estático que devuelve una copia de la lista de productos.
     public static List<Product> getAllProducts() {
+        // Devuelve una nueva ArrayList para evitar que el código externo modifique la lista original del catálogo.
         return new ArrayList<>(products);
     }
 }
