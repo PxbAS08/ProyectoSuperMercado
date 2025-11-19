@@ -12,6 +12,7 @@ import java.awt.*;
 import java.awt.event.MouseAdapter;
 import java.awt.event.MouseEvent;
 import java.util.List;
+import java.net.URL;
 
 public class InventoryPanel extends JPanel {
     private final JTable inventoryTable;
@@ -22,7 +23,6 @@ public class InventoryPanel extends JPanel {
     
     private final MainMenuPanel.LogoutListener backListener;
 
-    // Colores y fuentes
     private static final Color PRIMARY_COLOR = Color.decode("#72E872");
     private static final Color SECONDARY_COLOR = Color.decode("#FFFFFF");
     private static final Color BUTTON_HOVER_COLOR = Color.decode("#A0D8A0");
@@ -34,7 +34,6 @@ public class InventoryPanel extends JPanel {
         this.backListener = backListener;
         setLayout(new BorderLayout());
 
-        // --- Fondo Degradado ---
         JPanel gradientPanel = new JPanel() {
             @Override
             protected void paintComponent(Graphics g) {
@@ -48,29 +47,27 @@ public class InventoryPanel extends JPanel {
             }
         };
 
-        // --- Panel Contenido ---
-        JPanel contentPanel = new JPanel(new BorderLayout(30, 30));
+        JPanel contentPanel = new JPanel(new BorderLayout(15, 15));
         contentPanel.setOpaque(false);
         contentPanel.setBorder(new EmptyBorder(25, 25, 25, 25));
-        
+
+        // --- TÍTULO CON CARGA DE IMAGEN ROBUSTA ---
         JPanel titlePanel = new JPanel(new FlowLayout(FlowLayout.CENTER, 10, 0));
         titlePanel.setOpaque(false);
-        try {
-            ImageIcon icon = new ImageIcon(getClass().getResource("/recursos/inventario_1.png")); // Asegúrate de que el path sea correcto
-            Image img = icon.getImage().getScaledInstance(32, 32, Image.SCALE_SMOOTH); // Escalar la imagen
+        
+        ImageIcon icon = loadIcon("inventario");
+        if (icon != null) {
+            Image img = icon.getImage().getScaledInstance(32, 32, Image.SCALE_SMOOTH);
             titlePanel.add(new JLabel(new ImageIcon(img)));
-        } catch (Exception e) {
-            System.err.println("Error cargando imagen para inventario: " + e.getMessage());
         }
-
-        // Título
+        
         JLabel titleLabel = new JLabel("Inventario y Mermas");
         titleLabel.setFont(FONT_TITLE);
-        titleLabel.setForeground(Color.BLACK);
-        titleLabel.setHorizontalAlignment(SwingConstants.CENTER);
-        contentPanel.add(titleLabel, BorderLayout.NORTH);
+        titleLabel.setForeground(Color.WHITE);
+        titlePanel.add(titleLabel);
+        contentPanel.add(titlePanel, BorderLayout.NORTH);
+        // ------------------------------------------
 
-        // Tabla (Ahora incluye columna de Mermas)
         String[] columnNames = {"Código", "Producto", "Categoría", "Precio", "Stock", "Dañados/Caducados"};
         tableModel = new DefaultTableModel(columnNames, 0) {
             @Override
@@ -85,14 +82,12 @@ public class InventoryPanel extends JPanel {
         inventoryTable.getTableHeader().setFont(FONT_BUTTON);
         inventoryTable.setFillsViewportHeight(true);
         
-        // Centrar texto
         DefaultTableCellRenderer centerRenderer = new DefaultTableCellRenderer();
         centerRenderer.setHorizontalAlignment(JLabel.CENTER);
         for (int i = 0; i < inventoryTable.getColumnCount(); i++) {
             inventoryTable.getColumnModel().getColumn(i).setCellRenderer(centerRenderer);
         }
         
-        // Poner en rojo la columna de mermas para resaltar
         inventoryTable.getColumnModel().getColumn(5).setCellRenderer(new DefaultTableCellRenderer() {
             @Override
             public Component getTableCellRendererComponent(JTable table, Object value, boolean isSelected, boolean hasFocus, int row, int column) {
@@ -109,7 +104,6 @@ public class InventoryPanel extends JPanel {
         
         contentPanel.add(scrollPane, BorderLayout.CENTER);
 
-        // Panel Inferior
         JPanel southPanel = new JPanel(new BorderLayout(10, 10));
         southPanel.setOpaque(false);
         
@@ -134,7 +128,6 @@ public class InventoryPanel extends JPanel {
         gradientPanel.add(contentPanel);
         add(gradientPanel, BorderLayout.CENTER);
 
-        // Acciones
         btnBack.addActionListener(e -> {
             if (backListener != null) backListener.onLogout();
         });
@@ -142,6 +135,18 @@ public class InventoryPanel extends JPanel {
         btnRefresh.addActionListener(e -> loadInventoryData());
 
         loadInventoryData();
+    }
+    
+    private ImageIcon loadIcon(String baseName) {
+        String[] options = {"/recursos/" + baseName + ".png", "/recursos/" + baseName + "_1.png"};
+        for (String path : options) {
+            URL url = getClass().getResource(path);
+            if (url != null) {
+                return new ImageIcon(url);
+            }
+        }
+        System.err.println("No se encontró la imagen: " + baseName);
+        return null;
     }
 
     private void loadInventoryData() {

@@ -29,4 +29,31 @@ public class ProyectoSuperMercado { // Declaración de la clase.
         });
     }
 }
+    /*public static void main(String[] args) {
+        // --- CÓDIGO DE DIAGNÓSTICO ---
+        System.out.println("Buscando recursos...");
+        String[] imagenes = {"historial.png", "inventario.png", "devolucion.png", "pagotarjeta.png"};
+        for (String img : imagenes) {
+            java.net.URL url = ProyectoSuperMercado.class.getResource("/recursos/" + img);
+            if (url == null) {
+                System.err.println("ERROR CRÍTICO: No se encuentra '/recursos/" + img + "' en el build.");
+            } else {
+                System.out.println("OK: Encontrado " + img);
+            }
+        }
+        // -----------------------------
 
+        SwingUtilities.invokeLater(() -> {
+            try {
+                UIManager.setLookAndFeel(UIManager.getSystemLookAndFeelClassName());
+            } catch (Exception e) {
+            }
+            JFrame frame = new JFrame("ProyectoSuperMercado - Inicio de sesión");
+            frame.setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
+            frame.setContentPane(new LoginRegisterPanel());
+            frame.pack();
+            frame.setLocationRelativeTo(null);
+            frame.setVisible(true);
+        });
+    }
+    }*/

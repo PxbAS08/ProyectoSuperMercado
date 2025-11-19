@@ -9,6 +9,7 @@ import javax.swing.border.EmptyBorder;
 import java.awt.*;
 import java.awt.event.MouseAdapter;
 import java.awt.event.MouseEvent;
+import java.net.URL;
 
 public class CardPaymentPanel extends JPanel {
     private final JTextField txtCardNumber = new JTextField(16);
@@ -38,7 +39,6 @@ public class CardPaymentPanel extends JPanel {
         this.backListener = backListener;
         setLayout(new BorderLayout());
 
-        // Fondo
         JPanel gradientPanel = new JPanel() {
             @Override protected void paintComponent(Graphics g) {
                 super.paintComponent(g);
@@ -54,24 +54,24 @@ public class CardPaymentPanel extends JPanel {
         contentPanel.setOpaque(false);
         contentPanel.setBorder(new EmptyBorder(40, 40, 40, 40));
 
-        // Título
+        // --- TÍTULO CON CARGA DE IMAGEN ROBUSTA ---
         double toPay = purchaseManager.getRemainingToPay();
         JPanel titlePanel = new JPanel(new FlowLayout(FlowLayout.CENTER, 10, 0));
         titlePanel.setOpaque(false);
-        try {
-            ImageIcon icon = new ImageIcon(getClass().getResource("/recursos/pagotarjeta_1.png")); // Asegúrate de que el path sea correcto
-            Image img = icon.getImage().getScaledInstance(32, 32, Image.SCALE_SMOOTH); // Escalar la imagen
+        
+        ImageIcon icon = loadIcon("pagotarjeta");
+        if (icon != null) {
+            Image img = icon.getImage().getScaledInstance(32, 32, Image.SCALE_SMOOTH);
             titlePanel.add(new JLabel(new ImageIcon(img)));
-        } catch (Exception e) {
-            System.err.println("Error cargando imagen para tarjeta: " + e.getMessage());
         }
+        
         JLabel titleLabel = new JLabel("Pago con Tarjeta: $" + String.format("%.2f", toPay));
         titleLabel.setFont(FONT_TITLE);
-        titleLabel.setForeground(Color.BLACK);
-        titleLabel.setHorizontalAlignment(SwingConstants.CENTER);
-        contentPanel.add(titleLabel, BorderLayout.NORTH);
+        titleLabel.setForeground(Color.WHITE);
+        titlePanel.add(titleLabel);
+        contentPanel.add(titlePanel, BorderLayout.NORTH);
+        // ------------------------------------------
 
-        // Formulario
         JPanel form = new JPanel(new GridBagLayout());
         form.setOpaque(false);
         GridBagConstraints c = new GridBagConstraints();
@@ -97,7 +97,6 @@ public class CardPaymentPanel extends JPanel {
         
         contentPanel.add(form, BorderLayout.CENTER);
 
-        // Sur
         JPanel south = new JPanel(new BorderLayout(5, 5));
         south.setOpaque(false);
         
@@ -132,6 +131,18 @@ public class CardPaymentPanel extends JPanel {
         btnBack.addActionListener(e -> {
             if (backListener != null) backListener.onBack();
         });
+    }
+    
+    private ImageIcon loadIcon(String baseName) {
+        String[] options = {"/recursos/" + baseName + ".png", "/recursos/" + baseName + "_1.png"};
+        for (String path : options) {
+            URL url = getClass().getResource(path);
+            if (url != null) {
+                return new ImageIcon(url);
+            }
+        }
+        System.err.println("No se encontró la imagen: " + baseName);
+        return null;
     }
     
     private void loadSavedCard() {
@@ -203,7 +214,6 @@ public class CardPaymentPanel extends JPanel {
                 
                 Thread.sleep(1000); 
 
-                // Guardar compra
                 String user = SessionManager.getInstance().getCurrentUser();
                 String address = SessionManager.getInstance().getUserAddress();
                 
@@ -215,7 +225,7 @@ public class CardPaymentPanel extends JPanel {
                 );
                 PurchaseHistoryManager.getInstance().addPurchase(record);
                 purchaseManager.updateInventory();
-                purchaseManager.processWalletDeduction(); // Descontar saldo del monedero si aplica
+                purchaseManager.processWalletDeduction();
 
                 SwingUtilities.invokeLater(() -> {
                     progressBar.setValue(100);

@@ -9,8 +9,9 @@ import javax.swing.border.EmptyBorder;
 import java.awt.*;
 import java.awt.event.MouseAdapter;
 import java.awt.event.MouseEvent;
-import java.util.ArrayList; // IMPORTANTE: Agregado para corregir el error
+import java.util.ArrayList;
 import java.util.List;
+import java.net.URL;
 
 public class PurchaseHistoryPanel extends JPanel {
 
@@ -20,7 +21,6 @@ public class PurchaseHistoryPanel extends JPanel {
     private final JButton btnBack = new JButton("Regresar al Menú");
     private final MainMenuPanel.LogoutListener backListener;
 
-    // Colores y fuentes
     private static final Color PRIMARY_COLOR = Color.decode("#72E872");
     private static final Color SECONDARY_COLOR = Color.decode("#FFFFFF");
     private static final Color BUTTON_HOVER_COLOR = Color.decode("#A0D8A0");
@@ -32,7 +32,6 @@ public class PurchaseHistoryPanel extends JPanel {
         this.backListener = backListener;
         setLayout(new BorderLayout());
 
-        // Panel con degradado de fondo
         JPanel gradientPanel = new JPanel() {
             @Override
             protected void paintComponent(Graphics g) {
@@ -49,34 +48,33 @@ public class PurchaseHistoryPanel extends JPanel {
             }
         };
 
-        // Panel de contenido principal
         JPanel contentPanel = new JPanel(new BorderLayout(15, 15));
         contentPanel.setOpaque(false);
         contentPanel.setBorder(new EmptyBorder(25, 25, 25, 25));
-        
+
+        // --- TÍTULO CON CARGA DE IMAGEN ROBUSTA ---
         JPanel titlePanel = new JPanel(new FlowLayout(FlowLayout.CENTER, 10, 0));
         titlePanel.setOpaque(false);
-        try {
-            ImageIcon icon = new ImageIcon(getClass().getResource("/recursos/historial.png")); // Asegúrate de que el path sea correcto
-            Image img = icon.getImage().getScaledInstance(32, 32, Image.SCALE_SMOOTH); // Escalar la imagen
+        
+        // Intentar cargar imagen con o sin _1
+        ImageIcon icon = loadIcon("historial");
+        if (icon != null) {
+            Image img = icon.getImage().getScaledInstance(32, 32, Image.SCALE_SMOOTH);
             titlePanel.add(new JLabel(new ImageIcon(img)));
-        } catch (Exception e) {
-            System.err.println("Error cargando imagen para historial: " + e.getMessage());
         }
-
+        
         JLabel titleLabel = new JLabel("Historial de Compras");
         titleLabel.setFont(FONT_TITLE);
         titleLabel.setForeground(Color.BLACK);
-        titleLabel.setHorizontalAlignment(SwingConstants.CENTER);
-        contentPanel.add(titleLabel, BorderLayout.NORTH);
+        titlePanel.add(titleLabel);
+        contentPanel.add(titlePanel, BorderLayout.NORTH);
+        // ------------------------------------------
 
-        // Lista de historial
         historyList.setFont(FONT_TEXT);
         historyList.setSelectionMode(ListSelectionModel.SINGLE_SELECTION);
         JScrollPane scrollPane = new JScrollPane(historyList);
         contentPanel.add(scrollPane, BorderLayout.CENTER);
 
-        // Panel de botones
         JPanel buttonsPanel = new JPanel(new FlowLayout(FlowLayout.CENTER, 10, 0));
         buttonsPanel.setOpaque(false);
         styleButton(btnViewDetail);
@@ -86,29 +84,24 @@ public class PurchaseHistoryPanel extends JPanel {
         buttonsPanel.add(btnBack);
         contentPanel.add(buttonsPanel, BorderLayout.SOUTH);
 
-        // Deshabilitar botón
         btnViewDetail.setEnabled(false);
         
-        // Acción de regresar
         btnBack.addActionListener(e -> {
             if (backListener != null) {
-                backListener.onLogout(); // Vuelve al menú
+                backListener.onLogout(); 
             }
         });
         
-        // Acción de ver detalle (Conecta con ReturnPanel)
         btnViewDetail.addActionListener(e -> {
             PurchaseRecord selected = historyList.getSelectedValue();
             if (selected != null) {
                 JFrame frame = (JFrame) SwingUtilities.getWindowAncestor(PurchaseHistoryPanel.this);
                 
-                // Creamos el panel de devolución
                 ReturnPanel returnPanel = new ReturnPanel(selected, new ReturnPanel.ReturnNavigationListener() {
                     @Override
                     public void onBackToHistory() {
-                        // Volver a mostrar ESTE panel de historial y recargar datos
                         frame.setContentPane(PurchaseHistoryPanel.this);
-                        loadHistoryInThread(); // Recargar por si hubo cambios (cancelaciones)
+                        loadHistoryInThread(); 
                         frame.revalidate();
                         frame.repaint();
                     }
@@ -125,7 +118,6 @@ public class PurchaseHistoryPanel extends JPanel {
             }
         });
         
-        // Habilitar el botón de detalle cuando se selecciona un ítem
         historyList.addListSelectionListener(e -> {
             if (!e.getValueIsAdjusting()) {
                 btnViewDetail.setEnabled(historyList.getSelectedIndex() != -1);
@@ -135,32 +127,37 @@ public class PurchaseHistoryPanel extends JPanel {
         gradientPanel.add(contentPanel);
         add(gradientPanel, BorderLayout.CENTER);
 
-        // Cargar los datos en un hilo separado
         loadHistoryInThread();
+    }
+    
+    // Método auxiliar para cargar imágenes probando nombres
+    private ImageIcon loadIcon(String baseName) {
+        String[] options = {"/recursos/" + baseName + ".png", "/recursos/" + baseName + "_1.png"};
+        for (String path : options) {
+            URL url = getClass().getResource(path);
+            if (url != null) {
+                return new ImageIcon(url);
+            }
+        }
+        System.err.println("No se encontró la imagen: " + baseName);
+        return null;
     }
 
     private void loadHistoryInThread() {
         listModel.clear();
-        // CORRECCIÓN: Pasamos new ArrayList<>() en lugar de null para evitar el error
         listModel.addElement(new PurchaseRecord(new ArrayList<>(), 0, "Cargando...", "System") {
              @Override public String toString() { return "Cargando historial..."; }
         });
         
-        // Hilo (Runnable) para cargar los datos
         Runnable loadTask = () -> {
             try {
-                Thread.sleep(500); // Simula retraso
-                
-                // Obtenemos el usuario actual
+                Thread.sleep(500); 
                 User currentUser = SessionManager.getInstance().getUser();
-                // Se lo pasamos a getHistory para que filtre correctamente
                 List<PurchaseRecord> history = PurchaseHistoryManager.getInstance().getHistory(currentUser);
                 
-                // 2. Actualiza la UI (dentro del hilo de UI)
                 SwingUtilities.invokeLater(() -> {
                     listModel.clear();
                     if (history.isEmpty()) {
-                         // CORRECCIÓN: Pasamos new ArrayList<>() en lugar de null
                          listModel.addElement(new PurchaseRecord(new ArrayList<>(), 0, "", "System") {
                              @Override public String toString() { return "No hay compras registradas."; }
                         });
@@ -179,7 +176,6 @@ public class PurchaseHistoryPanel extends JPanel {
         new Thread(loadTask).start();
     }
 
-    // Método para estilizar los botones
     private void styleButton(JButton button) {
         button.setFont(FONT_BUTTON);
         button.setBackground(Color.WHITE);

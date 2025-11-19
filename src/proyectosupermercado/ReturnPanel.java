@@ -9,6 +9,7 @@ import javax.swing.border.EmptyBorder;
 import java.awt.*;
 import java.awt.event.MouseAdapter;
 import java.awt.event.MouseEvent;
+import java.net.URL;
 
 public class ReturnPanel extends JPanel {
     
@@ -27,7 +28,6 @@ public class ReturnPanel extends JPanel {
     private static final Color PRIMARY_COLOR = Color.decode("#72E872");
     private static final Color SECONDARY_COLOR = Color.decode("#FFFFFF");
     private static final Color BUTTON_HOVER_COLOR = Color.decode("#A0D8A0");
-    private static final Color ALERT_COLOR = Color.decode("#e74c3c");
     private static final Font FONT_TITLE = new Font("Cascadia Code", Font.BOLD, 20);
     private static final Font FONT_TEXT = new Font("Cascadia Code", Font.PLAIN, 14);
     private static final Font FONT_BUTTON = new Font("Cascadia Code", Font.BOLD, 14);
@@ -37,19 +37,16 @@ public class ReturnPanel extends JPanel {
         this.navigationListener = navigationListener;
         setLayout(new BorderLayout());
         
-        // 1. INICIALIZAR COMPONENTES PRIMERO (Corrección del error)
         btnReturn = new JButton("Devolver Producto");
         btnCancelTicket = new JButton("Cancelar Ticket Completo");
         btnBack = new JButton("Volver");
         cmbReason = new JComboBox<>(new String[]{"Dañado", "Caducado", "Cobro Erróneo", "Otro"});
         
-        // Estilizar componentes
         styleButton(btnReturn); 
         styleButton(btnCancelTicket); 
         styleButton(btnBack);
         cmbReason.setFont(FONT_TEXT);
 
-        // 2. CONFIGURAR PANELES
         JPanel gradientPanel = new JPanel() {
             @Override protected void paintComponent(Graphics g) {
                 super.paintComponent(g);
@@ -65,58 +62,56 @@ public class ReturnPanel extends JPanel {
         contentPanel.setOpaque(false);
         contentPanel.setBorder(new EmptyBorder(25, 25, 25, 25));
 
-        // Info Ticket (Header)
         JPanel header = new JPanel(new GridLayout(0, 1));
         header.setOpaque(false);
         
-        JPanel titlePanel = new JPanel(new FlowLayout(FlowLayout.CENTER, 10, 0));
-        titlePanel.setOpaque(false);
-        try {
-            ImageIcon icon = new ImageIcon(getClass().getResource("/recursos/devolucion_1.png")); // Asegúrate de que el path sea correcto
-            Image img = icon.getImage().getScaledInstance(32, 32, Image.SCALE_SMOOTH); // Escalar la imagen
-            titlePanel.add(new JLabel(new ImageIcon(img)));
-        } catch (Exception e) {
-            System.err.println("Error cargando imagen para inventario: " + e.getMessage());
-        }
-        
-        // Verificar si está todo devuelto
         if (record.isFullyReturned() && !record.getStatus().equals("CANCELADO")) {
              record.setStatus("DEVOLUCIÓN TOTAL");
         }
 
+        // --- TÍTULO CON CARGA DE IMAGEN ROBUSTA ---
+        JPanel titlePanel = new JPanel(new FlowLayout(FlowLayout.CENTER, 10, 0));
+        titlePanel.setOpaque(false);
+        
+        ImageIcon icon = loadIcon("devolucion");
+        if (icon != null) {
+            Image img = icon.getImage().getScaledInstance(32, 32, Image.SCALE_SMOOTH);
+            titlePanel.add(new JLabel(new ImageIcon(img)));
+        }
+
         JLabel title = new JLabel("Gestionar Compra: " + record.getStatus());
         title.setFont(FONT_TITLE);
-        title.setHorizontalAlignment(SwingConstants.CENTER);
+        titlePanel.add(title);
+        
+        header.add(titlePanel);
+        // ------------------------------------------
         
         JLabel lblFolio = new JLabel("Folio: " + record.getFolio() + " | Cliente: " + record.getUser());
         lblFolio.setFont(FONT_TEXT);
         JLabel lblTotal = new JLabel(String.format("Total: $%.2f | Fecha: %s", record.getTotalAmount(), record.getPurchaseDate()));
         lblTotal.setFont(FONT_TEXT);
         
-        header.add(title);
         header.add(lblFolio);
         header.add(lblTotal);
         contentPanel.add(header, BorderLayout.NORTH);
 
-        // Lista de Productos
         DefaultListModel<PurchaseItem> model = new DefaultListModel<>();
         record.getItems().forEach(model::addElement);
         productList = new JList<>(model);
         productList.setFont(new Font("Monospaced", Font.PLAIN, 14));
         
-        // 3. AHORA SÍ AGREGAMOS EL LISTENER (Porque btnReturn ya existe)
         productList.addListSelectionListener(e -> {
             PurchaseItem selected = productList.getSelectedValue();
-            if (selected != null) {
+            if (!e.getValueIsAdjusting() && selected != null) {
                 User u = SessionManager.getInstance().getUser();
-                // Aquí ya no dará error porque btnReturn fue inicializado arriba
                 btnReturn.setEnabled(!selected.isReturned() && !u.isAdmin() && !"CANCELADO".equals(record.getStatus()));
+            } else if (!e.getValueIsAdjusting()) {
+                 btnReturn.setEnabled(false);
             }
         });
         
         contentPanel.add(new JScrollPane(productList), BorderLayout.CENTER);
 
-        // Panel de Acciones (Sur)
         JPanel actions = new JPanel(new GridLayout(0, 1, 5, 5));
         actions.setOpaque(false);
         
@@ -141,10 +136,8 @@ public class ReturnPanel extends JPanel {
         gradientPanel.add(contentPanel);
         add(gradientPanel, BorderLayout.CENTER);
 
-        // 4. LÓGICA DE ROLES Y ESTADO INICIAL
         User currentUser = SessionManager.getInstance().getUser();
         
-        // Si es ADMIN o el ticket ya está cancelado, deshabilitar botones de acción
         if (currentUser.isAdmin() || "CANCELADO".equals(record.getStatus())) {
             btnReturn.setEnabled(false);
             btnCancelTicket.setEnabled(false);
@@ -153,17 +146,27 @@ public class ReturnPanel extends JPanel {
                 title.setText("Detalle de Compra (Vista Admin)");
             }
         } else {
-            // Si es cliente, deshabilitar "Devolver" al inicio hasta que seleccione algo
             btnReturn.setEnabled(false);
         }
 
-        // 5. LISTENERS DE BOTONES
         btnReturn.addActionListener(e -> processRefund(false));
         btnCancelTicket.addActionListener(e -> processRefund(true));
         
         btnBack.addActionListener(e -> {
             if (navigationListener != null) navigationListener.onBackToHistory();
         });
+    }
+    
+    private ImageIcon loadIcon(String baseName) {
+        String[] options = {"/recursos/" + baseName + ".png", "/recursos/" + baseName + "_1.png"};
+        for (String path : options) {
+            URL url = getClass().getResource(path);
+            if (url != null) {
+                return new ImageIcon(url);
+            }
+        }
+        System.err.println("No se encontró la imagen: " + baseName);
+        return null;
     }
 
     private void processRefund(boolean fullTicket) {
