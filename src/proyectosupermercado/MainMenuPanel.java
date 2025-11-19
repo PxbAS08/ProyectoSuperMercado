@@ -3,7 +3,6 @@
  * Click nbfs://nbhost/SystemFileSystem/Templates/Classes/Class.java to edit this template
  */
 package proyectosupermercado;
-
 /**
  *
  * @author pxavi
@@ -16,16 +15,18 @@ import java.awt.event.MouseEvent;
 
 public class MainMenuPanel extends JPanel {
     private final JLabel lblWelcome = new JLabel();
-    private final JTextField txtAddress = new JTextField(25); // Nuevo campo para la dirección
+    private final JLabel lblWallet = new JLabel();
+    private final JTextField txtAddress = new JTextField(25); 
     private final JButton btnLogout = new JButton("Cerrar sesión");
     private final JButton btnProducts = new JButton("Seleccionar productos");
     private final JButton btnPickup = new JButton("Recoger en tienda");
+    private final JButton btnHistory = new JButton("Historial de Compras"); 
+    private final JButton btnInventory = new JButton("Inventario"); 
 
     public interface LogoutListener {
         void onLogout();
     }
 
-    // Colores y fuentes
     private static final Color PRIMARY_COLOR = Color.decode("#72E872");
     private static final Color SECONDARY_COLOR = Color.decode("#FFFFFF");
     private static final Color BUTTON_HOVER_COLOR = Color.decode("#A0D8A0");
@@ -36,34 +37,28 @@ public class MainMenuPanel extends JPanel {
     public MainMenuPanel(LogoutListener logoutListener) {
         setLayout(new BorderLayout());
 
-        // Panel con degradado de fondo
+        // --- Fondo ---
         JPanel gradientPanel = new JPanel() {
-            @Override
-            protected void paintComponent(Graphics g) {
+            @Override protected void paintComponent(Graphics g) {
                 super.paintComponent(g);
                 Graphics2D g2d = (Graphics2D) g;
                 g2d.setRenderingHint(RenderingHints.KEY_RENDERING, RenderingHints.VALUE_RENDER_QUALITY);
-                int w = getWidth();
-                int h = getHeight();
-                Color color1 = PRIMARY_COLOR;
-                Color color2 = SECONDARY_COLOR;
-                GradientPaint gp = new GradientPaint(0, 0, color1, 0, h, color2);
+                GradientPaint gp = new GradientPaint(0, 0, PRIMARY_COLOR, 0, getHeight(), SECONDARY_COLOR);
                 g2d.setPaint(gp);
-                g2d.fillRect(0, 0, w, h);
+                g2d.fillRect(0, 0, getWidth(), getHeight());
             }
         };
 
-        // Panel de contenido principal, transparente
         JPanel contentPanel = new JPanel(new BorderLayout(20, 20));
         contentPanel.setOpaque(false);
         contentPanel.setBorder(new EmptyBorder(50, 50, 50, 50));
 
-        // Panel superior para la imagen, bienvenida y la dirección
+        // --- Panel Superior ---
         JPanel topPanel = new JPanel();
         topPanel.setOpaque(false);
         topPanel.setLayout(new BoxLayout(topPanel, BoxLayout.Y_AXIS));
 
-        // Agregar la imagen
+        // Logo
         try {
             ImageIcon originalIcon = new ImageIcon(getClass().getResource("/recursos/select.png"));
             Image originalImage = originalIcon.getImage();
@@ -75,117 +70,149 @@ public class MainMenuPanel extends JPanel {
         } catch (Exception e) {
             System.err.println("Error al cargar la imagen: " + e.getMessage());
         }
-
         topPanel.add(Box.createRigidArea(new Dimension(0, 15)));
 
-        String user = SessionManager.getInstance().getCurrentUser();
-        lblWelcome.setText("Bienvenido, " + user + "!");
+        User user = SessionManager.getInstance().getUser();
+        lblWelcome.setText("Bienvenido, " + user.getUsername() + "!");
         lblWelcome.setFont(FONT_TITLE);
-        lblWelcome.setForeground(Color.WHITE);
+        lblWelcome.setForeground(Color.BLACK);
         lblWelcome.setAlignmentX(Component.CENTER_ALIGNMENT);
         topPanel.add(lblWelcome);
-        topPanel.add(Box.createRigidArea(new Dimension(0, 15)));
 
-        JLabel lblAddress = new JLabel("Ingresa tu dirección:");
-        lblAddress.setFont(FONT_TEXT);
-        lblAddress.setForeground(Color.BLACK);
-        lblAddress.setAlignmentX(Component.CENTER_ALIGNMENT);
-        topPanel.add(lblAddress);
-        topPanel.add(Box.createRigidArea(new Dimension(0, 5)));
+        // Monedero Electrónico (Solo si no es Admin)
+        if (!user.isAdmin()) {
+            lblWallet.setText(String.format("Dinero Electrónico: $%.2f", user.getWalletBalance()));
+            lblWallet.setFont(new Font("Cascadia Code", Font.BOLD, 18));
+            lblWallet.setForeground(Color.decode("#27ae60"));
+            lblWallet.setAlignmentX(Component.CENTER_ALIGNMENT);
+            topPanel.add(Box.createRigidArea(new Dimension(0, 10)));
+            topPanel.add(lblWallet);
 
-        txtAddress.setFont(FONT_TEXT);
-        txtAddress.setMaximumSize(new Dimension(400, 30));
-        txtAddress.setAlignmentX(Component.CENTER_ALIGNMENT);
-        topPanel.add(txtAddress);
+            topPanel.add(Box.createRigidArea(new Dimension(0, 15)));
+            JLabel lblAddr = new JLabel("Ingresa tu dirección:");
+            lblAddr.setFont(FONT_TEXT);
+            lblAddr.setAlignmentX(Component.CENTER_ALIGNMENT);
+            topPanel.add(lblAddr);
+            
+            txtAddress.setFont(FONT_TEXT);
+            txtAddress.setMaximumSize(new Dimension(400, 30));
+            txtAddress.setAlignmentX(Component.CENTER_ALIGNMENT);
+            topPanel.add(txtAddress);
+        } else {
+            JLabel lblAdmin = new JLabel("Panel de Administración");
+            lblAdmin.setFont(FONT_TEXT);
+            lblAdmin.setAlignmentX(Component.CENTER_ALIGNMENT);
+            topPanel.add(Box.createRigidArea(new Dimension(0, 15)));
+            topPanel.add(lblAdmin);
+        }
 
         contentPanel.add(topPanel, BorderLayout.NORTH);
 
-        // Panel de botones
-        JPanel centerButtons = new JPanel(new FlowLayout(FlowLayout.CENTER, 20, 0));
+        // --- Botones ---
+        JPanel centerButtons = new JPanel(new FlowLayout(FlowLayout.CENTER));
         centerButtons.setOpaque(false);
+        JPanel stackPanel = new JPanel();
+        stackPanel.setLayout(new BoxLayout(stackPanel, BoxLayout.Y_AXIS));
+        stackPanel.setOpaque(false);
         
         styleButton(btnProducts);
         styleButton(btnPickup);
+        styleButton(btnHistory);
+        styleButton(btnInventory);
 
-        centerButtons.add(btnProducts);
-        centerButtons.add(btnPickup);
-        
+        // Alineación
+        btnProducts.setAlignmentX(Component.CENTER_ALIGNMENT);
+        btnPickup.setAlignmentX(Component.CENTER_ALIGNMENT);
+        btnHistory.setAlignmentX(Component.CENTER_ALIGNMENT);
+        btnInventory.setAlignmentX(Component.CENTER_ALIGNMENT);
+
+        // Lógica de Roles para Botones
+        if (user.isAdmin()) {
+            // Admin ve Historial e Inventario
+            stackPanel.add(btnHistory);
+            stackPanel.add(Box.createRigidArea(new Dimension(0, 10)));
+            stackPanel.add(btnInventory);
+        } else {
+            // Cliente ve Compras, Recoger e Historial
+            stackPanel.add(btnProducts);
+            stackPanel.add(Box.createRigidArea(new Dimension(0, 10)));
+            stackPanel.add(btnPickup);
+            stackPanel.add(Box.createRigidArea(new Dimension(0, 10)));
+            stackPanel.add(btnHistory);
+        }
+
+        centerButtons.add(stackPanel);
         contentPanel.add(centerButtons, BorderLayout.CENTER);
 
-        // Panel inferior para el botón de cerrar sesión
-        JPanel logoutPanel = new JPanel(new FlowLayout(FlowLayout.RIGHT, 0, 0));
-        logoutPanel.setOpaque(false);
+        // --- Botón Logout ---
+        JPanel south = new JPanel(new FlowLayout(FlowLayout.RIGHT));
+        south.setOpaque(false);
         styleButton(btnLogout);
-        logoutPanel.add(btnLogout);
-        
-        contentPanel.add(logoutPanel, BorderLayout.SOUTH);
+        south.add(btnLogout);
+        contentPanel.add(south, BorderLayout.SOUTH);
 
-        // Agrega el panel de contenido al panel de degradado
         gradientPanel.add(contentPanel);
-
-        // Agrega el panel de degradado al panel principal
         add(gradientPanel, BorderLayout.CENTER);
 
-        // Acciones
+        // --- Acciones ---
         btnLogout.addActionListener(e -> {
             SessionManager.getInstance().logout();
-            if (logoutListener != null) {
-                logoutListener.onLogout();
-            }
+            logoutListener.onLogout();
         });
 
-        btnProducts.addActionListener(e -> {
-            String address = txtAddress.getText().trim();
-            if (address.isEmpty()) {
-                JOptionPane.showMessageDialog(this, "Por favor, ingresa una dirección para continuar.", "Error", JOptionPane.ERROR_MESSAGE);
-                return;
-            }
-            SessionManager.getInstance().setUserAddress(address);
-            
-            JFrame frame = (JFrame) SwingUtilities.getWindowAncestor(MainMenuPanel.this);
-            frame.setContentPane(new ProductSelectionPanel(new CartManager(), () -> {
-                frame.setContentPane(new MainMenuPanel(logoutListener));
-                frame.revalidate();
-                frame.repaint();
-            }));
-            frame.revalidate();
-            frame.repaint();
-        });
-
+        btnProducts.addActionListener(e -> startShopping(logoutListener));
         btnPickup.addActionListener(e -> {
             SessionManager.getInstance().setUserAddress("Recoger en tienda");
+            navigateToSelection(logoutListener);
+        });
 
-            JFrame frame = (JFrame) SwingUtilities.getWindowAncestor(MainMenuPanel.this);
-            frame.setContentPane(new ProductSelectionPanel(new CartManager(), () -> {
+        btnHistory.addActionListener(e -> {
+            JFrame frame = (JFrame) SwingUtilities.getWindowAncestor(this);
+            frame.setContentPane(new PurchaseHistoryPanel(() -> {
                 frame.setContentPane(new MainMenuPanel(logoutListener));
                 frame.revalidate();
-                frame.repaint();
             }));
             frame.revalidate();
-            frame.repaint();
+        });
+
+        btnInventory.addActionListener(e -> {
+            JFrame frame = (JFrame) SwingUtilities.getWindowAncestor(this);
+            frame.setContentPane(new InventoryPanel(() -> {
+                frame.setContentPane(new MainMenuPanel(logoutListener));
+                frame.revalidate();
+            }));
+            frame.revalidate();
         });
     }
 
-    // Método para estilizar los botones
-    private void styleButton(JButton button) {
-        button.setFont(FONT_BUTTON);
-        button.setBackground(Color.WHITE);
-        button.setForeground(Color.BLACK);
-        button.setFocusPainted(false);
-        button.setBorder(BorderFactory.createEmptyBorder(10, 25, 10, 25));
-        button.setCursor(new Cursor(Cursor.HAND_CURSOR));
-        
-        button.addMouseListener(new MouseAdapter() {
-            @Override
-            public void mouseEntered(MouseEvent evt) {
-                button.setBackground(BUTTON_HOVER_COLOR);
-            }
+    private void startShopping(LogoutListener l) {
+        String address = txtAddress.getText().trim();
+        if (address.isEmpty()) {
+            JOptionPane.showMessageDialog(this, "Ingresa dirección o elige Recoger.");
+            return;
+        }
+        SessionManager.getInstance().setUserAddress(address);
+        navigateToSelection(l);
+    }
 
-            @Override
-            public void mouseExited(MouseEvent evt) {
-                button.setBackground(Color.WHITE);
-            }
+    private void navigateToSelection(LogoutListener l) {
+        JFrame frame = (JFrame) SwingUtilities.getWindowAncestor(this);
+        frame.setContentPane(new ProductSelectionPanel(new CartManager(), () -> {
+            frame.setContentPane(new MainMenuPanel(l));
+            frame.revalidate();
+        }));
+        frame.revalidate();
+    }
+
+    private void styleButton(JButton b) {
+        b.setFont(FONT_BUTTON); b.setBackground(Color.WHITE); b.setFocusPainted(false);
+        b.setBorder(BorderFactory.createEmptyBorder(10, 25, 10, 25));
+        b.setCursor(new Cursor(Cursor.HAND_CURSOR));
+        b.setMaximumSize(new Dimension(250, 40));
+        b.setPreferredSize(new Dimension(250, 40));
+        b.addMouseListener(new MouseAdapter() {
+            public void mouseEntered(MouseEvent e) { b.setBackground(BUTTON_HOVER_COLOR); }
+            public void mouseExited(MouseEvent e) { b.setBackground(Color.WHITE); }
         });
     }
 }
-

@@ -8,18 +8,12 @@ package proyectosupermercado; // Define el paquete.
  *
  * @author pxavi // Comentario del autor.
  */
-import java.io.IOException; // Importa la excepción para operaciones de E/S.
+import java.io.IOException;
 
-public interface AuthenticationService { // Declaración de la interfaz.
-    /**
-     * Registra un nuevo usuario. Devuelve true si registro exitoso, false si el usuario ya existe.
-     */
-    boolean register(String username, char[] password) throws IOException; // Método para registrar usuarios.
-
-    /**
-     * Intenta iniciar sesión. Devuelve true si usuario/contraseña coinciden.
-     */
-    boolean login(String username, char[] password) throws IOException; // Método para iniciar sesión.
+public interface AuthenticationService {
+    boolean register(String username, char[] password, String role) throws IOException;
+    User login(String username, char[] password) throws IOException;
+    void updateUser(User user) throws IOException; // Para guardar el saldo nuevo
 }
 
 

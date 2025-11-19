@@ -76,7 +76,7 @@ public class ProductSelectionPanel extends JPanel {
         mainHeaderPanel.setOpaque(false);
         JLabel mainTitleLabel = new JLabel("SuperMercado ONIX");
         mainTitleLabel.setFont(new Font("Cascadia Code", Font.BOLD, 24));
-        mainTitleLabel.setForeground(Color.WHITE);
+        mainTitleLabel.setForeground(Color.BLACK);
         mainTitleLabel.setHorizontalAlignment(SwingConstants.CENTER);
         
         // Agregar la imagen del logo en la esquina superior izquierda

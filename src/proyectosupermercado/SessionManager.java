@@ -2,51 +2,50 @@
  * Click nbfs://nbhost/SystemFileSystem/Templates/Licenses/license-default.txt to change this license
  * Click nbfs://nbhost/SystemFileSystem/Templates/Classes/Class.java to edit this template
  */
-package proyectosupermercado; // Define el paquete.
+package proyectosupermercado;
 
-/**
- *
- * @author pxavi // Comentario del autor.
- */
-public class SessionManager { // Declaración de la clase.
-    private static SessionManager instance; // La única instancia de la clase (patrón Singleton).
-    private String currentUser; // Almacena el nombre del usuario que ha iniciado sesión.
-    private Object userAddress;
+public class SessionManager {
+    private static SessionManager instance;
+    private User currentUser; // Ahora guardamos el objeto completo
+    private String userAddress;
 
-    private SessionManager() {} // Constructor privado para evitar que se creen nuevas instancias desde fuera.
+    private SessionManager() {}
 
-    public static synchronized SessionManager getInstance() { // Método público para obtener la única instancia.
-        if (instance == null) { // Si la instancia aún no ha sido creada...
-            instance = new SessionManager(); // ...se crea.
+    public static synchronized SessionManager getInstance() {
+        if (instance == null) {
+            instance = new SessionManager();
         }
-        return instance; // Devuelve la instancia.
+        return instance;
     }
 
-    public void login(String username) { // Método para establecer el usuario actual.
-        this.currentUser = username;
-        this.userAddress = null; // Limpiar dirección al iniciar sesión
+    public void login(User user) {
+        this.currentUser = user;
+        this.userAddress = null;
     }
 
-    public void logout() { // Método para cerrar la sesión.
+    public void logout() {
         this.currentUser = null;
-        this.userAddress = null; // Limpiar dirección al cerrar sesión
+        this.userAddress = null;
     }
 
-    public boolean isLoggedIn() { // Método para comprobar si hay una sesión activa.
+    public boolean isLoggedIn() {
         return currentUser != null;
     }
 
-    public String getCurrentUser() { // Método para obtener el nombre del usuario actual.
+    public String getCurrentUser() {
+        return currentUser != null ? currentUser.getUsername() : null;
+    }
+    
+    public User getUser() {
         return currentUser;
     }
        
-    // Métodos para la dirección
     public void setUserAddress(String address) {
         this.userAddress = address;
     }
     
     public String getUserAddress() {
-        return (String) userAddress;
+        return userAddress;
     }
 }
 

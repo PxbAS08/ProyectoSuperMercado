@@ -4,180 +4,252 @@
  */
 package proyectosupermercado;
 
-/**
- *
- * @author pxavi
- */
 import javax.swing.*;
 import javax.swing.border.EmptyBorder;
 import java.awt.*;
 import java.awt.event.MouseAdapter;
 import java.awt.event.MouseEvent;
 
-/*Panel de finalización de compra.*/
 public class PurchasePanel extends JPanel {
     private final JTextArea txtSummary = new JTextArea(15, 40);
     private final JButton btnConfirm = new JButton("Confirmar compra");
     private final JButton btnCancel = new JButton("Cancelar");
+    private final JComboBox<String> cmbPaymentMethod = new JComboBox<>(new String[]{"Efectivo", "Tarjeta de Crédito/Débito"});
+    private final JCheckBox chkUseWallet; 
+    private final JTextField txtWalletAmount; // Nuevo campo
+
+    private final PurchaseManager purchaseManager;
+    private final BackListener backListener;
 
     public interface BackListener {
         void onBack();
     }
 
-    // Colores y fuentes para el diseño
     private static final Color PRIMARY_COLOR = Color.decode("#72E872");
-    private static final Color SECONDARY_COLOR = Color.decode("#DCC184");
+    private static final Color SECONDARY_COLOR = Color.decode("#FFFFFF");
     private static final Color BUTTON_HOVER_COLOR = Color.decode("#A0D8A0");
     private static final Font FONT_TITLE = new Font("Cascadia Code", Font.BOLD, 18);
     private static final Font FONT_BUTTON = new Font("Cascadia Code", Font.BOLD, 14);
     private static final Font FONT_MONOSPACED = new Font("Monospaced", Font.PLAIN, 12);
+    private static final Font FONT_TEXT = new Font("Cascadia Code", Font.PLAIN, 14);
 
     public PurchasePanel(PurchaseManager purchaseManager, BackListener backListener) {
+        this.purchaseManager = purchaseManager;
+        this.backListener = backListener;
         setLayout(new BorderLayout());
 
-        // Panel con degradado de fondo
         JPanel gradientPanel = new JPanel() {
-            @Override
-            protected void paintComponent(Graphics g) {
+            @Override protected void paintComponent(Graphics g) {
                 super.paintComponent(g);
                 Graphics2D g2d = (Graphics2D) g;
                 g2d.setRenderingHint(RenderingHints.KEY_RENDERING, RenderingHints.VALUE_RENDER_QUALITY);
-                int w = getWidth();
-                int h = getHeight();
-                Color color1 = PRIMARY_COLOR;
-                Color color2 = SECONDARY_COLOR;
-                GradientPaint gp = new GradientPaint(0, 0, color1, 0, h, color2);
+                GradientPaint gp = new GradientPaint(0, 0, PRIMARY_COLOR, 0, getHeight(), SECONDARY_COLOR);
                 g2d.setPaint(gp);
-                g2d.fillRect(0, 0, w, h);
+                g2d.fillRect(0, 0, getWidth(), getHeight());
             }
         };
 
-        // Panel de contenido principal, transparente
         JPanel contentPanel = new JPanel(new BorderLayout(15, 15));
         contentPanel.setOpaque(false);
         contentPanel.setBorder(new EmptyBorder(25, 25, 25, 25));
 
-        // Título de la sección
         JLabel headerLabel = new JLabel("SuperMercado ONIX - Resumen de la Compra");
         headerLabel.setFont(FONT_TITLE);
-        headerLabel.setForeground(Color.WHITE);
+        headerLabel.setForeground(Color.BLACK);
         headerLabel.setHorizontalAlignment(SwingConstants.CENTER);
 
-        // Área de texto para el resumen
         txtSummary.setEditable(false);
         txtSummary.setFont(FONT_MONOSPACED);
         txtSummary.setForeground(Color.BLACK);
         txtSummary.setBackground(Color.WHITE);
         txtSummary.setOpaque(true);
+        txtSummary.setComponentOrientation(ComponentOrientation.LEFT_TO_RIGHT);
         JScrollPane scrollSummary = new JScrollPane(txtSummary);
-        scrollSummary.setOpaque(false);
-        scrollSummary.getViewport().setOpaque(true);
         
-        try {
-            txtSummary.setText(purchaseManager.generateSummary());
-            // Centrar el texto en el JTextArea es complicado, se puede simular con un diseño
-            txtSummary.setCaretPosition(0); // Vuelve al inicio del texto
-        } catch (Exception e) {
-            txtSummary.setText("No hay productos en el carrito.\n" + e.getMessage());
-        }
+        // --- Panel de Pago ---
+        JPanel paymentOptionsPanel = new JPanel(new GridLayout(0, 1, 5, 5));
+        paymentOptionsPanel.setOpaque(false);
+        
+        // Panel Monedero
+        JPanel walletPanel = new JPanel(new FlowLayout(FlowLayout.LEFT));
+        walletPanel.setOpaque(false);
+        
+        User u = SessionManager.getInstance().getUser();
+        chkUseWallet = new JCheckBox("Usar saldo ($" + String.format("%.2f", u.getWalletBalance()) + "):");
+        chkUseWallet.setFont(FONT_TEXT);
+        chkUseWallet.setForeground(Color.BLUE);
+        chkUseWallet.setOpaque(false);
+        
+        txtWalletAmount = new JTextField(6);
+        txtWalletAmount.setFont(FONT_TEXT);
+        txtWalletAmount.setText("0.00");
+        txtWalletAmount.setEnabled(false);
+        
+        JButton btnApplyWallet = new JButton("Aplicar");
+        styleButton(btnApplyWallet);
+        btnApplyWallet.setPreferredSize(new Dimension(80, 25));
+        btnApplyWallet.setEnabled(false);
 
-        // Panel para los botones
-        JPanel buttons = new JPanel();
+        walletPanel.add(chkUseWallet);
+        walletPanel.add(txtWalletAmount);
+        walletPanel.add(btnApplyWallet);
+        
+        chkUseWallet.addItemListener(e -> {
+            boolean selected = chkUseWallet.isSelected();
+            txtWalletAmount.setEnabled(selected);
+            btnApplyWallet.setEnabled(selected);
+            if (selected) {
+                // Por defecto poner el máximo posible
+                double max = Math.min(u.getWalletBalance(), purchaseManager.getCartManager().getTotal());
+                txtWalletAmount.setText(String.format("%.2f", max).replace(",", "."));
+            } else {
+                purchaseManager.setUseWallet(false, 0);
+                updateSummaryText();
+                checkFullPayment();
+            }
+        });
+        
+        btnApplyWallet.addActionListener(e -> {
+            try {
+                double amount = Double.parseDouble(txtWalletAmount.getText());
+                if (amount > u.getWalletBalance()) {
+                    JOptionPane.showMessageDialog(this, "Fondos insuficientes.");
+                    amount = u.getWalletBalance();
+                    txtWalletAmount.setText(String.format("%.2f", amount));
+                }
+                purchaseManager.setUseWallet(true, amount);
+                updateSummaryText();
+                checkFullPayment();
+            } catch (NumberFormatException ex) {
+                JOptionPane.showMessageDialog(this, "Monto inválido.");
+            }
+        });
+
+        // Panel Método Restante
+        JPanel methodPanel = new JPanel(new FlowLayout(FlowLayout.CENTER));
+        methodPanel.setOpaque(false);
+        JLabel lblMethod = new JLabel("Pago restante: ");
+        lblMethod.setFont(FONT_TEXT);
+        lblMethod.setForeground(Color.RED);
+        cmbPaymentMethod.setFont(FONT_TEXT);
+        
+        methodPanel.add(lblMethod);
+        methodPanel.add(cmbPaymentMethod);
+        
+        paymentOptionsPanel.add(walletPanel);
+        paymentOptionsPanel.add(methodPanel);
+
+        // Botones
+        JPanel buttons = new JPanel(new FlowLayout(FlowLayout.CENTER, 10, 0));
         buttons.setOpaque(false);
-        buttons.setLayout(new FlowLayout(FlowLayout.CENTER, 10, 0));
         styleButton(btnConfirm);
         styleButton(btnCancel);
         buttons.add(btnConfirm);
         buttons.add(btnCancel);
 
-        // Panel para la imagen debajo de los botones
         JPanel imagePanel = new JPanel();
         imagePanel.setOpaque(false);
         try {
-            ImageIcon originalIcon = new ImageIcon(getClass().getResource("/recursos/gracias.png"));
-            Image originalImage = originalIcon.getImage();
-            Image resizedImage = originalImage.getScaledInstance(128, 128, Image.SCALE_SMOOTH);
-            ImageIcon resizedIcon = new ImageIcon(resizedImage);
-            JLabel imageLabel = new JLabel(resizedIcon);
-            imageLabel.setAlignmentX(Component.CENTER_ALIGNMENT);
-            imagePanel.add(imageLabel);
-        } catch (Exception e) {
-            System.err.println("Error al cargar la imagen: " + e.getMessage());
-        }
+            ImageIcon icon = new ImageIcon(getClass().getResource("/recursos/logo.png"));
+            JLabel img = new JLabel(new ImageIcon(icon.getImage().getScaledInstance(64, 64, Image.SCALE_SMOOTH)));
+            imagePanel.add(img);
+        } catch (Exception e) {}
 
-        // Panel inferior que contiene los botones y la imagen
-        JPanel southPanel = new JPanel(new BorderLayout());
-        southPanel.setOpaque(false);
-        southPanel.add(buttons, BorderLayout.NORTH);
-        southPanel.add(imagePanel, BorderLayout.SOUTH);
+        JPanel southContainer = new JPanel();
+        southContainer.setLayout(new BoxLayout(southContainer, BoxLayout.Y_AXIS));
+        southContainer.setOpaque(false);
+        southContainer.add(paymentOptionsPanel);
+        southContainer.add(buttons);
+        southContainer.add(imagePanel);
 
-        // Panel para el JScrollPane con el texto del ticket y centrando el texto
         JPanel centerPanel = new JPanel(new GridBagLayout());
         centerPanel.setOpaque(false);
         GridBagConstraints gbc = new GridBagConstraints();
         gbc.fill = GridBagConstraints.BOTH;
-        gbc.weightx = 1.0;
-        gbc.weighty = 1.0;
+        gbc.weightx = 1.0; gbc.weighty = 1.0;
         centerPanel.add(scrollSummary, gbc);
 
-
-        // Añadiendo los componentes al panel de contenido
         contentPanel.add(headerLabel, BorderLayout.NORTH);
         contentPanel.add(centerPanel, BorderLayout.CENTER);
-        contentPanel.add(southPanel, BorderLayout.SOUTH);
+        contentPanel.add(southContainer, BorderLayout.SOUTH);
 
-        // Agrega el panel de contenido al panel de degradado
         gradientPanel.add(contentPanel);
-
-        // Agrega el panel de degradado al panel principal
         add(gradientPanel, BorderLayout.CENTER);
 
-        // Agrega las acciones de los botones
-        btnConfirm.addActionListener(e -> {
-            new Thread(new PurchaseThread(purchaseManager, new PurchaseThread.PurchaseListener() {
-                @Override
-                public void onPurchaseSuccess(String message) {
-                    SwingUtilities.invokeLater(() -> {
-                        JOptionPane.showMessageDialog(PurchasePanel.this, message, "Compra exitosa", JOptionPane.INFORMATION_MESSAGE);
-                        purchaseManager.clearCart();
-                        if (backListener != null) backListener.onBack();
-                    });
-                }
+        updateSummaryText();
 
-                @Override
-                public void onPurchaseFailure(String error) {
-                    SwingUtilities.invokeLater(() ->
-                        JOptionPane.showMessageDialog(PurchasePanel.this, error, "Error en la compra", JOptionPane.ERROR_MESSAGE)
-                    );
-                }
-            }), "PurchaseThread").start();
+        btnConfirm.addActionListener(e -> {
+            if (purchaseManager.getRemainingToPay() <= 0.01) { // Margen de error decimal
+                startCashPayment();
+                return;
+            }
+
+            String method = (String) cmbPaymentMethod.getSelectedItem();
+            if ("Tarjeta de Crédito/Débito".equals(method)) {
+                JFrame frame = (JFrame) SwingUtilities.getWindowAncestor(this);
+                frame.setContentPane(new CardPaymentPanel(purchaseManager, backListener));
+                frame.revalidate();
+                frame.repaint();
+            } else {
+                startCashPayment();
+            }
         });
 
         btnCancel.addActionListener(e -> {
             if (backListener != null) backListener.onBack();
         });
     }
+    
+    private void checkFullPayment() {
+        boolean coversAll = purchaseManager.getRemainingToPay() <= 0.01;
+        cmbPaymentMethod.setEnabled(!coversAll);
+        if (coversAll) {
+            btnConfirm.setText("Pagar con Monedero");
+        } else {
+            btnConfirm.setText("Confirmar Compra");
+        }
+    }
 
-    // Método para estilizar los botones
-    private void styleButton(JButton button) {
-        button.setFont(FONT_BUTTON);
-        button.setBackground(Color.WHITE);
-        button.setForeground(Color.BLACK);
-        button.setFocusPainted(false);
-        button.setBorder(BorderFactory.createEmptyBorder(10, 25, 10, 25));
-        button.setCursor(new Cursor(Cursor.HAND_CURSOR));
+    private void updateSummaryText() {
+        try {
+            txtSummary.setText(purchaseManager.generateSummary());
+            txtSummary.setCaretPosition(0);
+        } catch (Exception e) {
+            txtSummary.setText("Error: " + e.getMessage());
+        }
+    }
 
-        button.addMouseListener(new MouseAdapter() {
+    private void startCashPayment() {
+        new Thread(new PurchaseThread(purchaseManager, new PurchaseThread.PurchaseListener() {
             @Override
-            public void mouseEntered(MouseEvent evt) {
-                button.setBackground(BUTTON_HOVER_COLOR);
+            public void onPurchaseSuccess(String message) {
+                try {
+                    purchaseManager.processWalletDeduction();
+                } catch (Exception e) { e.printStackTrace(); }
+
+                SwingUtilities.invokeLater(() -> {
+                    JOptionPane.showMessageDialog(PurchasePanel.this, message, "Compra exitosa", JOptionPane.INFORMATION_MESSAGE);
+                    purchaseManager.clearCart();
+                    if (backListener != null) backListener.onBack();
+                });
             }
 
             @Override
-            public void mouseExited(MouseEvent evt) {
-                button.setBackground(Color.WHITE);
+            public void onPurchaseFailure(String error) {
+                SwingUtilities.invokeLater(() ->
+                    JOptionPane.showMessageDialog(PurchasePanel.this, error, "Error", JOptionPane.ERROR_MESSAGE)
+                );
             }
+        }), "PurchaseThread").start();
+    }
+
+    private void styleButton(JButton b) {
+        b.setFont(FONT_BUTTON); b.setBackground(Color.WHITE); b.setForeground(Color.BLACK);
+        b.setFocusPainted(false); b.setBorder(BorderFactory.createEmptyBorder(10, 25, 10, 25));
+        b.setCursor(new Cursor(Cursor.HAND_CURSOR));
+        b.addMouseListener(new MouseAdapter() {
+            public void mouseEntered(MouseEvent e) { b.setBackground(BUTTON_HOVER_COLOR); }
+            public void mouseExited(MouseEvent e) { b.setBackground(Color.WHITE); }
         });
     }
 }
-
